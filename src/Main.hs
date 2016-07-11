@@ -3,11 +3,12 @@ module Main where
 import System.Environment
 import System.Console.Readline
 import System.Directory
+import System.FilePath as F
 import Control.Monad
 import Data.Maybe
 import Text.XML.Light
 
-type Song = FilePath
+type Song = F.FilePath
 type Playlist = [Song]
 
 main :: IO ()
@@ -23,7 +24,7 @@ mhelp = "add song_path: adds song to the playlist (if it exists).\n"++
          "print: prints the content of the playlist.\n"++
          "rmv song_path: removes song from the playlist (if it exists)."
      
-load :: Bool -> FilePath -> IO ()
+load :: Bool -> F.FilePath -> IO ()
 load b file = do cont <- readFile file
                  pl <- parseWpl cont
                  menu b pl    
@@ -55,6 +56,10 @@ parseCmd pl ["print"] = mapM_ putStrLn pl >> menu False pl
 parseCmd pl ["rmv", fp] = putStrLn ("removing " ++ fp ++ " from playlist") >> menu False pl
 parseCmd pl _ = putStrLn "wrong command" >> menu False pl
 
+copySong fp = copyFileWithMetadata fp ("asd"++song) >>
+              putStrLn ("copied"++song)
+              where song = takeFileName fp
+
 export :: Playlist -> IO ()
 export pl = do createDirectoryIfMissing False "asd"
-               mapM_ (\a -> copyFile a "asd") pl
+               mapM_ (\a -> copySong a) pl
