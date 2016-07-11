@@ -1,7 +1,7 @@
 module Main where
 
 import System.Environment
-import System.Console.Readline
+import System.IO
 import System.Directory
 import System.FilePath as F
 import Control.Monad
@@ -44,13 +44,15 @@ parseWpl file = let contents = parseXML file
 
 menu :: Bool -> Playlist -> IO ()
 menu b pl = do when b (putStrLn "Playlist loaded.\nAvailable commands: add, check, exit, export, help, print, rmv. Use help for further information.")
-               readline ">" >>= ((parseCmd pl) . words . fromJust)
+               putStr ">"
+               hFlush stdout
+               getLine >>= ((parseCmd pl) . words)
 
 parseCmd :: Playlist -> [String] -> IO ()
 parseCmd pl ["add", fp] = putStrLn ("adding " ++ fp ++ " to playlist") >> menu False pl
 parseCmd pl ["check"] = putStrLn "checking playlist" >> menu False pl
 parseCmd pl ["exit"] = putStrLn "Goodbye!"
-parseCmd pl ["export"] = putStrLn "exporting playlist" >> menu False pl
+parseCmd pl ["export"] = export pl >> menu False pl
 parseCmd pl ["help"] = putStrLn mhelp >> menu False pl
 parseCmd pl ["print"] = mapM_ putStrLn pl >> menu False pl
 parseCmd pl ["rmv", fp] = putStrLn ("removing " ++ fp ++ " from playlist") >> menu False pl
@@ -63,3 +65,4 @@ copySong fp = copyFileWithMetadata fp ("asd"++song) >>
 export :: Playlist -> IO ()
 export pl = do createDirectoryIfMissing False "asd"
                mapM_ (\a -> copySong a) pl
+               putStrLn "Export complete!"
