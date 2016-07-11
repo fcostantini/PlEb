@@ -1,6 +1,9 @@
 module Main where
 
 import System.Environment
+import System.Console.Readline
+import System.Directory
+import Control.Monad
 import Data.Maybe
 import Text.XML.Light
 
@@ -11,14 +14,23 @@ main :: IO ()
 main = do
           getArgs >>= parseArgs
 
-help :: String
-help = "Usage: PlEb [-h] [playlist] [song]\nAvailable formats are: wpl"
+help, mhelp :: String
+help = "Usage: PlEb [-h] [playlist]\nAvailable formats are: wpl."
+mhelp = "add song_path: adds song to the playlist (if it exists).\n"++
+         "check: checks if the playlist has wrong paths.\n"++
+         "exit: terminates the program.\n"++
+         "export: creates a folder with the songs on the playlist.\n"++
+         "print: prints the content of the playlist.\n"++
+         "rmv song_path: removes song from the playlist (if it exists)."
+     
+load :: Bool -> FilePath -> IO ()
+load b file = do cont <- readFile file
+                 pl <- parseWpl cont
+                 menu b pl    
 
 parseArgs :: [String] -> IO ()
 parseArgs ["-h"] = putStrLn help 
-parseArgs [file] = do cont <- readFile file
-                      pl <- parseWpl cont
-                      menu pl
+parseArgs [file] = load True file
 parseArgs [] = putStrLn "Missing arguments"
 parseArgs _ = putStrLn "Incorrect execution. Use -h for help"
 
@@ -29,12 +41,20 @@ parseWpl file = let contents = parseXML file
                     cQName n = QName n Nothing Nothing
                 in return $ map fromJust songs
 
-menu :: Playlist -> IO ()
-menu pl = getLine >>= (parseCmd . words)
+menu :: Bool -> Playlist -> IO ()
+menu b pl = do when b (putStrLn "Playlist loaded.\nAvailable commands: add, check, exit, export, help, print, rmv. Use help for further information.")
+               readline ">" >>= ((parseCmd pl) . words . fromJust)
 
-parseCmd :: [String] -> IO ()
-parseCmd ["add", fp] = putStrLn ("adding " ++ fp ++ " to playlist")
-parseCmd ["rm", fp] = putStrLn ("removing " ++ fp ++ " from playlist")
-parseCmd ["check"] = putStrLn "checking playlist"
-parseCmd ["export"] = putStrLn "exporting playlist"
-parseCmd _ = putStrLn "wrong command"
+parseCmd :: Playlist -> [String] -> IO ()
+parseCmd pl ["add", fp] = putStrLn ("adding " ++ fp ++ " to playlist") >> menu False pl
+parseCmd pl ["check"] = putStrLn "checking playlist" >> menu False pl
+parseCmd pl ["exit"] = putStrLn "Goodbye!"
+parseCmd pl ["export"] = putStrLn "exporting playlist" >> menu False pl
+parseCmd pl ["help"] = putStrLn mhelp >> menu False pl
+parseCmd pl ["print"] = mapM_ putStrLn pl >> menu False pl
+parseCmd pl ["rmv", fp] = putStrLn ("removing " ++ fp ++ " from playlist") >> menu False pl
+parseCmd pl _ = putStrLn "wrong command" >> menu False pl
+
+export :: Playlist -> IO ()
+export pl = do createDirectoryIfMissing False "asd"
+               mapM_ (\a -> copyFile a "asd") pl
