@@ -2,10 +2,12 @@ module Main where
 
 import System.Environment
 import System.IO
+import System.IO.Strict as STR
 import System.Directory
 import System.FilePath as F
 import Control.Monad
 import Data.Maybe
+import Data.List
 import Text.XML.Light
 import Playlist
 import Wpl
@@ -23,10 +25,11 @@ mhelp = "add song_path: adds song to the playlist (if it exists).\n"++
          "rmv song_path: removes song from the playlist (if it exists)."
      
 load :: Bool -> F.FilePath -> IO ()
-load b file = do cont <- readFile file
+load b file = do cont <- STR.readFile file
                  songs <- parseWpl cont
                  let fname = F.takeBaseName file
-                 menu b (Pl fname songs)    
+                 let fext = F.takeExtension file
+                 menu b (Pl file fext fname songs)    
 
 parseArgs :: [String] -> IO ()
 parseArgs ["-h"] = putStrLn help 
@@ -41,10 +44,11 @@ menu b pl = do when b (putStrLn "Playlist loaded.\nAvailable commands: add, chec
                getLine >>= ((parseCmd pl) . words)
 
 parseCmd :: Playlist -> [String] -> IO ()
-parseCmd pl ["add", fp] = do putStrLn ("adding " ++ fp ++ " to playlist")
-                             let newpl = addP pl fp
-                             prettyWpl newpl
-                             menu False newpl
+parseCmd pl ("add":fp) = do let gfp = intercalate " " fp
+                            putStrLn ("adding " ++ gfp ++ " to playlist")
+                            let newpl = addP pl gfp
+                            prettyWpl newpl
+                            load False (getPath newpl)
 parseCmd pl ["check"] = putStrLn "checking playlist" >>
                         menu False pl
 parseCmd pl ["exit"] = putStrLn "Goodbye!"
@@ -52,14 +56,18 @@ parseCmd pl ["export"] = export pl >>
                          menu False pl
 parseCmd pl ["help"] = putStrLn mhelp >>
                        menu False pl
-parseCmd pl ["print"] = putStrLn ("Playlist " ++ (getTitle pl)) >>
+parseCmd pl ["print"] = putStrLn ("Playlist " ++ (getTitle pl) ++ "\n") >>
                         mapM_ putStrLn (getSongs pl) >>
                         menu False pl
-parseCmd pl ["rmv", fp] = putStrLn ("removing " ++ fp ++ " from playlist") >>
-                          menu False pl
+parseCmd pl ("rmv":fp) = do let gfp = intercalate " " fp
+                            putStrLn ("removing " ++ gfp ++ " from playlist")
+                            let newpl = rmP pl gfp
+                            prettyWpl newpl
+                            load False (getPath newpl)
 parseCmd pl _ = putStrLn "wrong command" >>
                 menu False pl
 
+copySong :: Title -> Song -> IO ()
 copySong name fp = copyFileWithMetadata fp (name++song) >>
                    putStrLn ("copied"++song)
                    where song = takeFileName fp

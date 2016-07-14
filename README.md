@@ -21,6 +21,10 @@ To load the playlist:
     $ PlEb playlist-file  
 
 ### Operations  
-add: adds a song to the playlist (currently generates a new file).  
+
+Note: add and rmv actually modify the file, you may want to do a backup before.  
+
+add: adds a song to the playlist.  
+rmv: removes a song from the playlist.  
 print: shows contents of the playlist.  
 export: copies every song to a single folder.  

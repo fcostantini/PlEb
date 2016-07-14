@@ -15,6 +15,7 @@ parseWpl file = let contents = parseXML file
                     cQName n = QName n Nothing Nothing
                 in return $ map fromJust songs
 
+wplPrelude :: Title -> String
 wplPrelude name = "<?wpl version=\"1.0\"?>\n" ++
                   "<smil>\n" ++
                   "\t<head>\n" ++
@@ -23,15 +24,17 @@ wplPrelude name = "<?wpl version=\"1.0\"?>\n" ++
                   "\t<body>\n" ++
                   "\t\t<seq>\n"
 
+wplEpilogue :: String
 wplEpilogue = "\t\t</seq>\n" ++ 
               "\t</body>\n" ++
               "</smil>"
 
+writeSongWpl :: F.FilePath -> Song -> IO ()
 writeSongWpl file song = let entry = "\t\t\t<media src=\""++song++"\"/>\n" in
                              appendFile file entry
 
 prettyWpl :: Playlist -> IO ()
-prettyWpl pl = let newfile = getTitle pl ++ "mod.wpl" in
-                   do writeFile newfile $ wplPrelude (getTitle pl)
-                      mapM (\a -> writeSongWpl newfile a) $ getSongs pl
-                      appendFile newfile wplEpilogue
+prettyWpl pl = let file = getPath pl in
+                   do writeFile file $ wplPrelude (getTitle pl)
+                      mapM (\a -> writeSongWpl file a) $ getSongs pl
+                      appendFile file wplEpilogue

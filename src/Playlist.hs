@@ -1,11 +1,18 @@
 module Playlist where
 
 import System.FilePath as F
+import Data.List
 
 type Title = String
 type Song = F.FilePath
-data Playlist = Pl {getTitle :: Title,
+data Playlist = Pl {getPath :: F.FilePath,
+                    getExt :: String,
+                    getTitle :: Title,
                     getSongs :: [Song]}
 
 addP :: Playlist -> Song -> Playlist
 addP pl s = pl {getSongs = (getSongs pl) ++ [s]}
+
+--removes all occurrences of the song
+rmP:: Playlist -> Song -> Playlist
+rmP pl s = pl {getSongs = filter (/=s) (getSongs pl)}
