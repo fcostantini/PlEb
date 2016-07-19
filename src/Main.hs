@@ -5,7 +5,6 @@ import System.IO
 import System.IO.Strict as STR
 import System.Directory
 import System.FilePath as F
-import System.FilePath.Find as FF
 import System.Exit
 import Control.Monad
 import Control.Exception
@@ -56,7 +55,7 @@ parseCmd :: Playlist -> [String] -> IO ()
 parseCmd pl ("add":fp) = do let gfp = intercalate " " fp
                             exists <- doesFileExist gfp
                             if not exists then
-                              putStrLn "Error adding: file does not exist." >> findSimilar gfp >> menu False pl
+                              putStrLn "Error adding: file does not exist." >> menu False pl
                             else do putStrLn ("Adding " ++ gfp ++ " to playlist...\n")
                                     let newpl = addP pl gfp
                                     let ext = getExt (getPath pl)
@@ -107,7 +106,7 @@ checkSong :: Song -> IO ()
 checkSong s = do b <- doesFileExist s
                  case b of
                     True -> putStrLn ("Ok " ++ F.takeBaseName s)
-                    False -> putStrLn (s ++ " does NOT exist in the file system!!! It's recommended to remove it from the playlist.") >> findSimilar s
+                    False -> putStrLn (s ++ " does NOT exist in the file system!!! It's recommended to remove it from the playlist.")
 
 check :: Playlist -> IO ()
 check pl = do mapM_ checkSong $ getSongs pl
@@ -125,15 +124,4 @@ write :: Ext -> Playlist -> IO ()
 --write Pls = writePls
 write Wpl = writeWpl
 --write Xspf = writeXspf
-write _ = \_ -> return ()
-
-fileWoExt :: FindClause FilePath
-fileWoExt = F.takeBaseName `liftM` filePath
-
-findSimilar :: Song -> IO ()
-findSimilar s = let rec = FF.depth FF.<=? 7
-                    fil = fileWoExt FF.==? (F.takeBaseName s) in
-                  do home <- getHomeDirectory
-                     files <- FF.find rec fil (F.takeDrive s)
-                     putStrLn (s ++ " not found. Maybe you meant:")
-                     mapM_ putStrLn files              
+write _ = \_ -> return ()   
