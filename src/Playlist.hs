@@ -3,7 +3,6 @@ module Playlist where
 import System.FilePath as F
 import Data.List
 
-type Title = String
 type Song = F.FilePath
 data Ext = M3u | Pls | Wpl | Xspf | Other deriving Eq
 data Playlist = Pl {getPath :: F.FilePath,

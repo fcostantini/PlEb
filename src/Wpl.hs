@@ -15,7 +15,7 @@ parseWpl file = let contents = parseXML file
                     cQName n = QName n Nothing Nothing
                 in return $ map fromJust songs
 
-wplPrelude :: Title -> String
+wplPrelude :: String -> String
 wplPrelude name = "<?wpl version=\"1.0\"?>\n" ++
                   "<smil>\n" ++
                   "\t<head>\n" ++
