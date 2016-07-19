@@ -13,6 +13,7 @@ import Data.List
 import Text.XML.Light
 
 import HandleE
+import M3u
 import Playlist
 import Wpl
 
@@ -100,8 +101,6 @@ export pl = do let pname = F.takeBaseName (getPath pl)
                mapM_ (\a -> copySong pname a) $ getSongs pl
                putStrLn "Export complete!"
 
---TODO: find file with System.FilePath.Find
-
 checkSong :: Song -> IO ()
 checkSong s = do b <- doesFileExist s
                  case b of
@@ -113,7 +112,7 @@ check pl = do mapM_ checkSong $ getSongs pl
               putStrLn ("Checking complete!")
 
 parse :: Ext -> String -> IO [Song]
---parse M3u = parseM3u
+parse M3u = parseM3u
 --parse Pls = parsePls
 parse Wpl = parseWpl
 --parse Xspf = parseXspf

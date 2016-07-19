@@ -11,4 +11,4 @@ executable PlEb
   hs-source-dirs:      src
   main-is:             Main.hs
   default-language:    Haskell2010
-  build-depends:       base, xml, directory, filepath, strict
+  build-depends:       base, xml, directory, filepath, strict, parsec
