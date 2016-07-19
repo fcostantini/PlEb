@@ -25,6 +25,7 @@ To load the playlist:
 Note: add and rmv actually modify the file, you may want to do a backup before.  
 
 add: adds a song to the playlist.  
-rmv: removes a song from the playlist.  
-print: shows contents of the playlist.  
+check: checks if the songs actually exist.  
 export: copies every song to a single folder.  
+print: shows contents of the playlist.  
+rmv: removes a song from the playlist.  

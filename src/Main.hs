@@ -27,9 +27,7 @@ mhelp = "add song_path: adds song to the playlist (if it exists).\n"++
 load :: Bool -> F.FilePath -> IO ()
 load b file = do cont <- STR.readFile file
                  songs <- parseWpl cont
-                 let fname = F.takeBaseName file
-                 let fext = F.takeExtension file
-                 menu b (Pl file fext fname songs)    
+                 menu b (Pl file songs)    
 
 parseArgs :: [String] -> IO ()
 parseArgs ["-h"] = putStrLn help 
@@ -45,26 +43,28 @@ menu b pl = do when b (putStrLn "Playlist loaded.\nAvailable commands: add, chec
 
 parseCmd :: Playlist -> [String] -> IO ()
 parseCmd pl ("add":fp) = do let gfp = intercalate " " fp
-                            putStrLn ("adding " ++ gfp ++ " to playlist")
+                            putStrLn ("Adding " ++ gfp ++ " to playlist...")
                             let newpl = addP pl gfp
                             prettyWpl newpl
                             load False (getPath newpl)
-parseCmd pl ["check"] = putStrLn "checking playlist" >>
+parseCmd pl ["check"] = putStrLn "Checking playlist..." >>
+                        check pl >>
                         menu False pl
 parseCmd pl ["exit"] = putStrLn "Goodbye!"
 parseCmd pl ["export"] = export pl >>
                          menu False pl
 parseCmd pl ["help"] = putStrLn mhelp >>
                        menu False pl
-parseCmd pl ["print"] = putStrLn ("Playlist " ++ (getTitle pl) ++ "\n") >>
-                        mapM_ putStrLn (getSongs pl) >>
-                        menu False pl
+parseCmd pl ["print"] = let pname = F.takeBaseName (getPath pl) in
+                          putStrLn ("Playlist " ++ pname ++ "\n") >>
+                          mapM_ putStrLn (getSongs pl) >>
+                          menu False pl
 parseCmd pl ("rmv":fp) = do let gfp = intercalate " " fp
-                            putStrLn ("removing " ++ gfp ++ " from playlist")
+                            putStrLn ("Removing " ++ gfp ++ " from playlist...")
                             let newpl = rmP pl gfp
                             prettyWpl newpl
                             load False (getPath newpl)
-parseCmd pl _ = putStrLn "wrong command" >>
+parseCmd pl _ = putStrLn "Wrong command." >>
                 menu False pl
 
 copySong :: Title -> Song -> IO ()
@@ -73,7 +73,19 @@ copySong name fp = copyFileWithMetadata fp (name++song) >>
                    where song = takeFileName fp
 
 export :: Playlist -> IO ()
-export pl = do let pname = getTitle pl
+export pl = do let pname = F.takeBaseName (getPath pl)
                createDirectoryIfMissing False pname
                mapM_ (\a -> copySong pname a) $ getSongs pl
                putStrLn "Export complete!"
+
+--TODO: find file with System.FilePath.Find
+
+checkSong :: Song -> IO ()
+checkSong s = do b <- doesFileExist s
+                 case b of
+                    True -> putStrLn ("Ok " ++ F.takeBaseName s)
+                    False -> putStrLn (s ++ " does NOT exist in the file system!!!\nIt's recommended to remove it.")
+
+check :: Playlist -> IO ()
+check pl = do mapM_ checkSong $ getSongs pl
+              putStrLn ("Checking complete!")

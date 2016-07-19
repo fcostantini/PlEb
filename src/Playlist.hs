@@ -6,8 +6,6 @@ import Data.List
 type Title = String
 type Song = F.FilePath
 data Playlist = Pl {getPath :: F.FilePath,
-                    getExt :: String,
-                    getTitle :: Title,
                     getSongs :: [Song]}
 
 addP :: Playlist -> Song -> Playlist

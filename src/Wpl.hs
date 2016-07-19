@@ -34,7 +34,8 @@ writeSongWpl file song = let entry = "\t\t\t<media src=\""++song++"\"/>\n" in
                              appendFile file entry
 
 prettyWpl :: Playlist -> IO ()
-prettyWpl pl = let file = getPath pl in
-                   do writeFile file $ wplPrelude (getTitle pl)
-                      mapM (\a -> writeSongWpl file a) $ getSongs pl
+prettyWpl pl = let file = getPath pl
+                   title = F.takeBaseName file in
+                   do writeFile file $ wplPrelude title
+                      mapM_ (\a -> writeSongWpl file a) $ getSongs pl
                       appendFile file wplEpilogue
