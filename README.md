@@ -16,7 +16,7 @@ It's recommended to add ~/.local/bin to your path for easier usage. You can also
 
 ## Usage  
 
-To load the playlist:  
+To load a playlist:  
 
     $ PlEb playlist-file  
 
@@ -26,6 +26,8 @@ Note: add and rmv actually modify the file, you may want to do a backup before.
 
 add: adds a song to the playlist.  
 check: checks if the songs actually exist.  
-export: copies every song to a single folder.  
+export: copies every (correct) song to a single folder.  
+load: loads another playlist.  
 print: shows contents of the playlist.  
 rmv: removes a song from the playlist.  
+exit/quit: exits the program.  
