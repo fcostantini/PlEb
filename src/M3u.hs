@@ -9,16 +9,13 @@ import Playlist
 data M3uLine = Header | Info String | Path F.FilePath deriving Show
 type M3uFile = [M3uLine]
 
-eol :: Parser ()
-eol = oneOf "\n\r" >> return ()
-
 comment :: Parser ()
 comment = do char '#'
              skipMany (noneOf "\r\n")
 
 header :: Parser M3uLine
 header = do string "#EXTM3U"
-            eol
+            skipMany (noneOf "\r\n")
             return Header
 
 info :: Parser M3uLine
@@ -35,7 +32,7 @@ line = do skipMany space
           try (header >>= return . Just) <|> try (info >>= return . Just) <|> try (comment >> return Nothing) <|> (path >>= return . Just)
 
 file :: Parser M3uFile
-file = do lines <- sepBy line (oneOf "\n\r")
+file = do lines <- sepBy line endOfLine
           eof
           return (catMaybes lines)
 
