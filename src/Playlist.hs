@@ -6,7 +6,7 @@ import Data.List
 type Song = F.FilePath
 data Ext = M3u | Pls | Wpl | Xspf | Other deriving Eq
 data Playlist = Pl {getPath :: F.FilePath,
-                    getSongs :: [Song]}
+                    getSongs :: [Song]} deriving Show
 
 addP :: Playlist -> Song -> Playlist
 addP pl s = pl {getSongs = (getSongs pl) ++ [s]}

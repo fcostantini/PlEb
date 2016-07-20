@@ -50,5 +50,17 @@ lineToSong Header = []
 lineToSong (Info i) = []
 lineToSong (Path f) = f
 
-parseM3u :: F.FilePath -> IO [Song]
-parseM3u f = readM3u f >>= (return . m3uToSong)                
+parseM3u :: String -> IO [Song]
+parseM3u f = readM3u f >>= (return . m3uToSong)   
+
+m3uPrelude ::  String
+m3uPrelude = "#EXTM3U\n"
+
+writeSongM3u :: F.FilePath -> Song -> IO ()
+writeSongM3u file song = let entry = "#EXTINFO\n"++song++"\n" in
+                             appendFile file entry
+
+writeM3u :: Playlist -> IO ()
+writeM3u pl = let file = getPath pl in
+                  do writeFile file m3uPrelude
+                     mapM_ (\a -> writeSongM3u file a) $ getSongs pl          

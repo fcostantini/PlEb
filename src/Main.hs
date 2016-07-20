@@ -119,7 +119,7 @@ parse Wpl = parseWpl
 parse _ = \_ -> return []
 
 write :: Ext -> Playlist -> IO ()
---write M3u = writeM3u
+write M3u = writeM3u
 --write Pls = writePls
 write Wpl = writeWpl
 --write Xspf = writeXspf

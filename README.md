@@ -1,5 +1,5 @@
 # PlEb  
-A simple tool to manage playlists (more info as development continues).  
+A simple tool to manage playlists. Supported formats are wpl and m3u.  
 
 ## Requirements  
 
