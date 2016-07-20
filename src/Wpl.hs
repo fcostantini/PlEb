@@ -9,14 +9,14 @@ import Data.Maybe
 import Text.XML.Light
 
 parseWpl :: String -> IO [Song]
-parseWpl file = let contents = parseXML file
+parseWpl file = let cQName n = QName n Nothing Nothing
+                    contents = parseXML file
                     media = concatMap (findElements $ cQName "media") (onlyElems contents)
-                    songs = map (findAttr $ cQName "src") media
-                    cQName n = QName n Nothing Nothing
+                    songs = map (findAttr $ cQName "src") media                    
                 in return $ map fromJust songs
 
 wplPrelude :: String -> String
-wplPrelude name = "<?wpl version=\"1.0\"?>\n" ++
+wplPrelude name = "<?xml version=\"1.0\"?>\n" ++
                   "<smil>\n" ++
                   "\t<head>\n" ++
                   "\t\t<title>" ++ name ++ "</title>\n" ++

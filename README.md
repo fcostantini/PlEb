@@ -1,5 +1,5 @@
 # PlEb  
-A simple tool to manage playlists. Supported formats are wpl and m3u.  
+A simple tool to manage playlists. Supported formats are m3u, wpl and xspf.  
 
 ## Requirements  
 
@@ -22,12 +22,12 @@ To load a playlist:
 
 ### Operations  
 
-Note: add and rmv actually modify the file, you may want to do a backup before.  
+**Note:** add and rmv actually modify the file, you may want to do a backup before.  
 
-add: adds a song to the playlist.  
-check: checks if the songs actually exist.  
-export: copies every (correct) song to a single folder.  
-load: loads another playlist.  
-print: shows contents of the playlist.  
-rmv: removes a song from the playlist.  
-exit/quit: exits the program.  
+    add: adds a song to the playlist.  
+    check: checks if the songs actually exist.  
+    export: copies every (correct) song to a single folder.  
+    load: loads another playlist.  
+    print: shows contents of the playlist.  
+    rmv: removes a song from the playlist.  
+    exit/quit: exits the program.  

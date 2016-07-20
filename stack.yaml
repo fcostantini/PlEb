@@ -11,6 +11,7 @@ extra-deps:
 - filepath-1.4.1.0
 - strict-0.3.2
 - parsec-3.1.11
+- network-uri-2.6.1.0
 
 # Override default flag values for local packages and extra-deps
 flags: {}

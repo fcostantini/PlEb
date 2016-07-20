@@ -16,6 +16,7 @@ import HandleE
 import M3u
 import Playlist
 import Wpl
+import Xspf
 
 main :: IO ()
 main = getArgs >>= parseArgs
@@ -115,12 +116,12 @@ parse :: Ext -> String -> IO [Song]
 parse M3u = parseM3u
 --parse Pls = parsePls
 parse Wpl = parseWpl
---parse Xspf = parseXspf
+parse Xspf = parseXspf
 parse _ = \_ -> return []
 
 write :: Ext -> Playlist -> IO ()
 write M3u = writeM3u
 --write Pls = writePls
 write Wpl = writeWpl
---write Xspf = writeXspf
+write Xspf = writeXspf
 write _ = \_ -> return ()   
