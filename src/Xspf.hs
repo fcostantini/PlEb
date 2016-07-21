@@ -23,8 +23,8 @@ fromURI s = let u = unEscapeString s
             in normalizePath (drop uriC u)
 
 toURI :: String -> String
-toURI s = let ns = uriP ++ (unNormalizePath s) in
-          escapeURIString isUnescapedInURI ns        
+toURI s = let ns = uriP ++ (unNormalizePath s)
+          in escapeURIString isUnescapedInURI ns
 
 parseXspf :: String -> IO [Song]
 parseXspf file = let cQName n = QName n (Just "http://xspf.org/ns/0/") Nothing
@@ -42,16 +42,16 @@ xspfPrelude name = "<?wpl version=\"1.0\" encoding=\"UTF-8\"?>\n" ++
                    "<trackList>\n"
 
 xspfEpilogue :: String
-xspfEpilogue = "</trackList>\n" ++ 
+xspfEpilogue = "</trackList>\n" ++
                "</playlist>\n"
 
 writeSongXspf :: F.FilePath -> Song -> IO ()
-writeSongXspf file song = let entry = "<track>\n<location>"++(toURI song)++"</location>\n</track>\n" in
-                              appendFile file entry
+writeSongXspf file song = let entry = "<track>\n<location>"++(toURI song)++"</location>\n</track>\n"
+                          in appendFile file entry
 
 writeXspf :: Playlist -> IO ()
 writeXspf pl = let file = getPath pl
-                   title = F.takeBaseName file in
-                   do writeFile file $ xspfPrelude title
-                      mapM_ (\a -> writeSongXspf file a) $ getSongs pl
-                      appendFile file xspfEpilogue
+                   title = F.takeBaseName file
+               in do writeFile file $ xspfPrelude title
+                     mapM_ (\a -> writeSongXspf file a) $ getSongs pl
+                     appendFile file xspfEpilogue

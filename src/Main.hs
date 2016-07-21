@@ -17,6 +17,7 @@ import M3u
 import Playlist
 import Wpl
 import Xspf
+import Pls
 
 main :: IO ()
 main = getArgs >>= parseArgs
@@ -32,8 +33,8 @@ mhelp = "add song_path: adds song to the playlist (if it exists).\n"++
         "rmv song_path: removes song from the playlist (if it exists)."
      
 load :: Bool -> F.FilePath -> IO ()
-load b file = let ext = getExt file in
-                 if ext == Other then putStrLn ("Unsupported format.")
+load b file = let ext = getExt file
+              in if ext == Other then putStrLn ("Unsupported format.")
                  else do trycont <- tryJust handleRead (STR.readFile file)
                          case trycont of
                            Left e -> putStrLn e >> exitSuccess
@@ -114,14 +115,14 @@ check pl = do mapM_ checkSong $ getSongs pl
 
 parse :: Ext -> String -> IO [Song]
 parse M3u = parseM3u
---parse Pls = parsePls
+parse Pls = parsePls
 parse Wpl = parseWpl
 parse Xspf = parseXspf
 parse _ = \_ -> return []
 
 write :: Ext -> Playlist -> IO ()
 write M3u = writeM3u
---write Pls = writePls
+write Pls = writePls
 write Wpl = writeWpl
 write Xspf = writeXspf
-write _ = \_ -> return ()   
+write _ = \_ -> return ()

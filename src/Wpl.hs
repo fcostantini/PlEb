@@ -12,7 +12,7 @@ parseWpl :: String -> IO [Song]
 parseWpl file = let cQName n = QName n Nothing Nothing
                     contents = parseXML file
                     media = concatMap (findElements $ cQName "media") (onlyElems contents)
-                    songs = map (findAttr $ cQName "src") media                    
+                    songs = map (findAttr $ cQName "src") media
                 in return $ map fromJust songs
 
 wplPrelude :: String -> String
@@ -30,12 +30,12 @@ wplEpilogue = "\t\t</seq>\n" ++
               "</smil>"
 
 writeSongWpl :: F.FilePath -> Song -> IO ()
-writeSongWpl file song = let entry = "\t\t\t<media src=\""++song++"\"/>\n" in
-                             appendFile file entry
+writeSongWpl file song = let entry = "\t\t\t<media src=\""++song++"\"/>\n"
+                         in appendFile file entry
 
 writeWpl :: Playlist -> IO ()
 writeWpl pl = let file = getPath pl
-                  title = F.takeBaseName file in
-                  do writeFile file $ wplPrelude title
-                     mapM_ (\a -> writeSongWpl file a) $ getSongs pl
-                     appendFile file wplEpilogue
+                  title = F.takeBaseName file
+              in do writeFile file $ wplPrelude title
+                    mapM_ (\a -> writeSongWpl file a) $ getSongs pl
+                    appendFile file wplEpilogue
