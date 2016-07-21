@@ -1,29 +1,30 @@
 module Main where
 
+import Control.Exception
+import Control.Monad
+import Data.Char
+import Data.List
+import Data.Maybe
+import System.Directory
 import System.Environment
+import System.Exit
+import System.FilePath as F
 import System.IO
 import System.IO.Strict as STR
-import System.Directory
-import System.FilePath as F
-import System.Exit
-import Control.Monad
-import Control.Exception
-import Data.Maybe
-import Data.List
 import Text.XML.Light
 
 import HandleE
 import M3u
 import Playlist
+import Pls
 import Wpl
 import Xspf
-import Pls
 
 main :: IO ()
 main = getArgs >>= parseArgs
 
-help, mhelp :: String
-help = "Usage: PlEb [-h] [playlist]\nAvailable formats are: wpl."
+help, mhelp, vers :: String
+help = "Usage: PlEb [-h] [-v] [playlist]\nAvailable formats are: m3u, pls, wpl and xspf."
 mhelp = "add song_path: adds song to the playlist (if it exists).\n"++
         "check: checks if the playlist has inexistent files.\n"++
         "exit/quit: terminates the program.\n"++
@@ -31,6 +32,7 @@ mhelp = "add song_path: adds song to the playlist (if it exists).\n"++
         "load pl: loads a playlist.\n"++
         "print: prints the content of the playlist.\n"++
         "rmv song_path: removes song from the playlist (if it exists)."
+vers = "PlEb 1.0.0"
      
 load :: Bool -> F.FilePath -> IO ()
 load b file = let ext = getExt file
@@ -43,6 +45,7 @@ load b file = let ext = getExt file
 
 parseArgs :: [String] -> IO ()
 parseArgs ["-h"] = putStrLn help 
+parseArgs ["-v"] = putStrLn vers
 parseArgs [file] = load True file
 parseArgs [] = putStrLn "Missing arguments"
 parseArgs _ = putStrLn "Incorrect execution. Use -h for help"
@@ -54,39 +57,48 @@ menu b pl = do let pname = F.takeBaseName (getPath pl)
                hFlush stdout
                getLine >>= ((parseCmd pl) . words)
 
+goodbye :: IO ()
+goodbye = putStrLn "Goodbye!"
+
+wrong :: IO ()
+wrong = putStrLn "Wrong command."
+
 parseCmd :: Playlist -> [String] -> IO ()
-parseCmd pl ("add":fp) = do let gfp = intercalate " " fp
-                            exists <- doesFileExist gfp
-                            if not exists then
-                              putStrLn "Error adding: file does not exist." >> menu False pl
-                            else do putStrLn ("Adding " ++ gfp ++ " to playlist...\n")
-                                    let newpl = addP pl gfp
+parseCmd pl [c] = case map toLower c of
+                    "add"    -> putStrLn "add error: please write the path of the song." >> menu False pl
+                    "check"  -> putStrLn "Checking playlist...\n" >>
+                                check pl >>
+                                menu False pl
+                    "exit"   -> goodbye
+                    "export" -> putStrLn "Exporting playlist...\n" >>
+                                export pl >>
+                                menu False pl
+                    "help"   -> putStrLn mhelp >> menu False pl
+                    "load"   -> putStrLn "load error: please specify the playlist to load."
+                    "print"  -> plPrint pl >> menu False pl 
+                    "quit"   -> goodbye
+                    "rmv"    -> putStrLn "rmv error: please write the path of the song." >> menu False pl
+                    _        -> wrong >> menu False pl
+parseCmd pl (c:fp) = case map toLower c of
+                       "add"  -> do let gfp = intercalate " " fp
+                                    exists <- doesFileExist gfp
+                                    if not exists then
+                                      putStrLn "add error: file does not exist." >> menu False pl
+                                    else do putStrLn ("Adding " ++ gfp ++ " to playlist...\n")
+                                            let newpl = addP pl gfp
+                                            let ext = getExt (getPath pl)
+                                            write ext newpl
+                                            load False (getPath newpl)
+                       "load" -> let gfp = intercalate " " fp
+                                 in load True gfp
+                       "rmv"  -> do let gfp = intercalate " " fp
+                                    putStrLn ("Removing " ++ gfp ++ " from playlist...\n")
+                                    let newpl = rmP pl gfp
                                     let ext = getExt (getPath pl)
                                     write ext newpl
                                     load False (getPath newpl)
-parseCmd pl ["check"] = putStrLn "Checking playlist...\n" >>
-                        check pl >>
-                        menu False pl
-parseCmd pl [p] | p == "exit" || p == "quit" = putStrLn "Goodbye!"
-parseCmd pl ["export"] = putStrLn "Exporting playlist...\n" >>
-                         export pl >>
-                         menu False pl
-parseCmd pl ["help"] = putStrLn mhelp >>
-                       menu False pl
-parseCmd _ ("load":fp) = let gfp = intercalate " " fp in 
-                           load True gfp
-parseCmd pl ["print"] = let pname = F.takeBaseName (getPath pl) in
-                          putStrLn ("\nPlaylist " ++ pname ++ "\n") >>
-                          mapM_ putStrLn (getSongs pl) >> putStrLn "" >>
-                          menu False pl
-parseCmd pl ("rmv":fp) = do let gfp = intercalate " " fp
-                            putStrLn ("Removing " ++ gfp ++ " from playlist...\n")
-                            let newpl = rmP pl gfp
-                            let ext = getExt (getPath pl)
-                            write ext newpl
-                            load False (getPath newpl)
-parseCmd pl _ = putStrLn "Wrong command." >>
-                menu False pl
+                       _      -> wrong >> menu False pl
+parseCmd pl _ = wrong >> menu False pl
 
 --TODO: state
 copySong :: String -> Song -> IO ()
@@ -102,6 +114,11 @@ export pl = do let pname = F.takeBaseName (getPath pl)
                createDirectoryIfMissing False pname
                mapM_ (\a -> copySong pname a) $ getSongs pl
                putStrLn "Export complete!"
+
+plPrint :: Playlist -> IO ()
+plPrint pl = let pname = F.takeBaseName (getPath pl)
+             in putStrLn ("\nPlaylist " ++ pname ++ "\n") >>
+                mapM_ putStrLn (getSongs pl) >> putStrLn ""
 
 checkSong :: Song -> IO ()
 checkSong s = do b <- doesFileExist s

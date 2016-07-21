@@ -1,9 +1,10 @@
 module M3u where
 
 import Data.Maybe
-import Text.ParserCombinators.Parsec
-import Text.Parsec.Char
 import System.FilePath as F
+import Text.Parsec.Char
+import Text.ParserCombinators.Parsec
+
 import Playlist
 
 data M3uLine = Header | Info String | Path F.FilePath deriving Show

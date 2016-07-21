@@ -1,13 +1,14 @@
 module Xspf where
 
-import Playlist
-import System.IO
-import System.Directory
-import System.FilePath as F
 import Control.Monad
 import Data.Maybe
-import Text.XML.Light
 import Network.URI
+import System.Directory
+import System.FilePath as F
+import System.IO
+import Text.XML.Light
+
+import Playlist
 
 uriP = "file:///"
 uriC = length uriP

@@ -2,9 +2,10 @@ module Pls where
 
 import Data.Maybe
 import Data.Char
-import Text.ParserCombinators.Parsec
-import Text.Parsec.Char
 import System.FilePath as F
+import Text.Parsec.Char
+import Text.ParserCombinators.Parsec
+
 import Playlist
 
 data PlsLine = Header | Title String | Length Int | File F.FilePath | Entries Int | Version Int deriving Show

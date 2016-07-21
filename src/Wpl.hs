@@ -1,12 +1,13 @@
 module Wpl where
 
-import Playlist
-import System.IO
-import System.Directory
-import System.FilePath as F
 import Control.Monad
 import Data.Maybe
+import System.Directory
+import System.FilePath as F
+import System.IO
 import Text.XML.Light
+
+import Playlist
 
 parseWpl :: String -> IO [Song]
 parseWpl file = let cQName n = QName n Nothing Nothing

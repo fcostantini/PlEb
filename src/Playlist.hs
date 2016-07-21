@@ -1,7 +1,7 @@
 module Playlist where
 
-import System.FilePath as F
 import Data.List
+import System.FilePath as F
 
 type Song = F.FilePath
 data Ext = M3u | Pls | Wpl | Xspf | Other deriving Eq
