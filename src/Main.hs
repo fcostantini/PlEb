@@ -27,6 +27,7 @@ help, mhelp, vers :: String
 help = "Usage: PlEb [-h] [-v] [playlist]\nAvailable formats are: m3u, pls, wpl and xspf."
 mhelp = "add song_path: adds song to the playlist (if it exists).\n"++
         "check: checks if the playlist has inexistent files.\n"++
+        "convert format: converts to desired format.\n"++
         "exit/quit: terminates the program.\n"++
         "export: creates a folder with the songs on the playlist.\n"++
         "load pl: loads a playlist.\n"++
@@ -52,7 +53,7 @@ parseArgs _ = putStrLn "Incorrect execution. Use -h for help"
 
 menu :: Bool -> Playlist -> IO ()
 menu b pl = do let pname = F.takeBaseName (getPath pl)
-               when b (putStrLn $ "Playlist " ++ pname ++ " loaded.\nAvailable commands: add, check, exit/quit, export, help, load, print, rmv. Use help for further information.")
+               when b (putStrLn $ "Playlist " ++ pname ++ " loaded.\nAvailable commands: add, check, convert, exit/quit, export, help, load, print, rmv. Use help for further information.")
                putStr ">"
                hFlush stdout
                getLine >>= ((parseCmd pl) . words)
@@ -65,42 +66,47 @@ wrong = putStrLn "Wrong command."
 
 parseCmd :: Playlist -> [String] -> IO ()
 parseCmd pl [c] = case map toLower c of
-                    "add"    -> putStrLn "add error: please write the path of the song." >> menu False pl
-                    "check"  -> putStrLn "Checking playlist...\n" >>
-                                check pl >>
-                                menu False pl
-                    "exit"   -> goodbye
-                    "export" -> putStrLn "Exporting playlist...\n" >>
-                                export pl >>
-                                menu False pl
-                    "help"   -> putStrLn mhelp >> menu False pl
-                    "load"   -> putStrLn "load error: please specify the playlist to load."
-                    "print"  -> plPrint pl >> menu False pl 
-                    "quit"   -> goodbye
-                    "rmv"    -> putStrLn "rmv error: please write the path of the song." >> menu False pl
-                    _        -> wrong >> menu False pl
+                    "add"     -> putStrLn "add error: please write the path of the song." >> menu False pl
+                    "check"   -> putStrLn "Checking playlist...\n" >>
+                                 check pl >>
+                                 menu False pl
+                    "convert" -> putStrLn "convert error: please specify the format you want to convert to." >>
+                                 menu False pl
+                    "exit"    -> goodbye
+                    "export"  -> putStrLn "Exporting playlist...\n" >>
+                                 export pl >>
+                                 menu False pl
+                    "help"    -> putStrLn mhelp >> menu False pl
+                    "load"    -> putStrLn "load error: please specify the playlist to load."
+                    "print"   -> plPrint pl >> menu False pl 
+                    "quit"    -> goodbye
+                    "rmv"     -> putStrLn "rmv error: please write the path of the song." >> menu False pl
+                    _         -> wrong >> menu False pl
 parseCmd pl (c:fp) = case map toLower c of
-                       "add"  -> do let gfp = intercalate " " fp
-                                    exists <- doesFileExist gfp
-                                    if not exists then
-                                      putStrLn "add error: file does not exist." >> menu False pl
-                                    else do putStrLn ("Adding " ++ gfp ++ " to playlist...\n")
-                                            let newpl = addP pl gfp
-                                            let ext = getExt (getPath pl)
-                                            write ext newpl
-                                            load False (getPath newpl)
-                       "load" -> let gfp = intercalate " " fp
-                                 in load True gfp
-                       "rmv"  -> do let gfp = intercalate " " fp
-                                    putStrLn ("Removing " ++ gfp ++ " from playlist...\n")
-                                    let newpl = rmP pl gfp
-                                    let ext = getExt (getPath pl)
-                                    write ext newpl
-                                    load False (getPath newpl)
-                       _      -> wrong >> menu False pl
+                       "add"     -> do let gfp = intercalate " " fp
+                                       exists <- doesFileExist gfp
+                                       if not exists then
+                                         putStrLn "add error: file does not exist." >> menu False pl
+                                       else do putStrLn ("Adding " ++ gfp ++ " to playlist...\n")
+                                               let newpl = addP pl gfp
+                                               let ext = getExt (getPath pl)
+                                               write ext newpl
+                                               load False (getPath newpl)
+                       "convert" -> let format = intercalate " " fp
+                                    in convert pl format >>
+                                       menu False pl
+                       "load"    -> let gfp = intercalate " " fp
+                                    in load True gfp
+                       "rmv"     -> do let gfp = intercalate " " fp
+                                       putStrLn ("Removing " ++ gfp ++ " from playlist...\n")
+                                       let newpl = rmP pl gfp
+                                       let ext = getExt (getPath pl)
+                                       write ext newpl
+                                       load False (getPath newpl)
+                       _         -> wrong >> menu False pl
 parseCmd pl _ = wrong >> menu False pl
 
---TODO: state
+--TODO: maybe add stats?
 copySong :: String -> Song -> IO ()
 copySong name fp = do exists <- doesFileExist fp
                       if not exists then
@@ -129,6 +135,19 @@ checkSong s = do b <- doesFileExist s
 check :: Playlist -> IO ()
 check pl = do mapM_ checkSong $ getSongs pl
               putStrLn ("Checking complete!")
+
+convert :: Playlist -> String -> IO ()
+convert pl fmat = if (length fmat) > 4 then putStrLn "convert error: wrong format" else --this check is stupid, improve it laterfget
+                  let plf = tail $ F.takeExtension (getPath pl)
+                      lfmat = map toLower fmat
+                  in if plf == lfmat then putStrLn "convert error: the playlist is already in this format."
+                     else let ext = getExt ("." ++ lfmat)
+                          in case ext of
+                               Other -> putStrLn "convert error: format not supported"
+                               _     -> let newfp = F.replaceExtension (getPath pl) lfmat
+                                            auxPl = (Pl newfp (getSongs pl))
+                                        in write ext auxPl >>
+                                           putStrLn "Conversion complete! Load the new file if you want to edit it."
 
 parse :: Ext -> String -> IO [Song]
 parse M3u = parseM3u

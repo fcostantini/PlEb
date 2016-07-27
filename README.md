@@ -26,6 +26,7 @@ To load a playlist:
 
     add: adds a song to the playlist.  
     check: checks if the songs actually exist.  
+    convert: converts the playlist to another format.  
     export: copies every (correct) song to a single folder.  
     load: loads another playlist.  
     print: shows contents of the playlist.  
