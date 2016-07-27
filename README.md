@@ -1,9 +1,9 @@
 # PlEb  
-A simple tool to manage playlists. Supported formats are m3u, pls, wpl and xspf.  
+A simple tool to manage playlists. Supported formats are m3u, m3u8, pls, wpl and xspf.  
 
 ## Requirements  
 
-A modern version of stack. For Windows, Haskell Platform has everything you need.
+A modern version of stack. For Windows, Haskell Platform has everything you need. Alternatively an executable is available in Releases.  
 
 ## Installation  
 
@@ -26,6 +26,7 @@ To load a playlist:
 
     add: adds a song to the playlist.  
     check: checks if the songs actually exist.  
+    combine: combines playlists.  
     convert: converts the playlist to another format.  
     export: copies every (correct) song to a single folder.  
     load: loads another playlist.  

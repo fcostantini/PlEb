@@ -18,6 +18,7 @@ rmP pl s = pl {getSongs = filter (/=s) (getSongs pl)}
 getExt :: F.FilePath -> Ext
 getExt fp = case F.takeExtension fp of
               ".m3u"  -> M3u
+              ".m3u8" -> M3u
               ".pls"  -> Pls
               ".wpl"  -> Wpl
               ".xspf" -> Xspf

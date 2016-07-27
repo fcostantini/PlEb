@@ -24,25 +24,34 @@ main :: IO ()
 main = getArgs >>= parseArgs
 
 help, mhelp, vers :: String
-help = "Usage: PlEb [-h] [-v] [playlist]\nAvailable formats are: m3u, pls, wpl and xspf."
-mhelp = "add song_path: adds song to the playlist (if it exists).\n"++
+help = "Usage: PlEb [-h] [-v] [playlist]\nAvailable formats are: m3u, m3u8, pls, wpl and xspf."
+mhelp = "\nadd song_path: adds song to the playlist (if it exists).\n"++
         "check: checks if the playlist has inexistent files.\n"++
+        "combine pl: combines present playlist with the provided one.\n"++
         "convert format: converts to desired format.\n"++
         "exit/quit: terminates the program.\n"++
         "export: creates a folder with the songs on the playlist.\n"++
         "load pl: loads a playlist.\n"++
         "print: prints the content of the playlist.\n"++
-        "rmv song_path: removes song from the playlist (if it exists)."
+        "rmv song_path: removes song from the playlist (if it exists).\n"
 vers = "PlEb 1.0.0"
-     
+warning = "\n---------------------------------------------------------------------------------\n"++
+          "WARNING: found no songs in playlist (this is okay if you are using an empty one).\n"++
+          "---------------------------------------------------------------------------------\n"
+
 load :: Bool -> F.FilePath -> IO ()
-load b file = let ext = getExt file
-              in if ext == Other then putStrLn ("Unsupported format.")
-                 else do trycont <- tryJust handleRead (STR.readFile file)
-                         case trycont of
-                           Left e -> putStrLn e >> exitSuccess
-                           Right cont -> do songs <- parse ext cont
-                                            menu b (Pl file songs)
+load b file = do playlist <- getPlaylist file
+                 when (null $ getSongs playlist) (putStrLn warning)
+                 menu b playlist
+
+getPlaylist :: F.FilePath -> IO Playlist
+getPlaylist file = let ext = getExt file
+                   in if ext == Other then putStrLn ("Unsupported format.") >> exitSuccess
+                      else do trycont <- tryJust handleRead (STR.readFile file)
+                              case trycont of
+                                Left e -> putStrLn e >> exitSuccess
+                                Right cont -> do songs <- parse ext cont
+                                                 return $ (Pl file songs)
 
 parseArgs :: [String] -> IO ()
 parseArgs ["-h"] = putStrLn help 
@@ -53,55 +62,62 @@ parseArgs _ = putStrLn "Incorrect execution. Use -h for help"
 
 menu :: Bool -> Playlist -> IO ()
 menu b pl = do let pname = F.takeBaseName (getPath pl)
-               when b (putStrLn $ "Playlist " ++ pname ++ " loaded.\nAvailable commands: add, check, convert, exit/quit, export, help, load, print, rmv. Use help for further information.")
+               when b (putStrLn $ "\nPlaylist " ++ pname ++ " loaded.\n\nAvailable commands: add, check, combine, convert, exit/quit, export, help, load, print, rmv. Use help for further information.\n")
                putStr ">"
                hFlush stdout
                getLine >>= ((parseCmd pl) . words)
 
 goodbye :: IO ()
-goodbye = putStrLn "Goodbye!"
+goodbye = putStrLn "\nGoodbye!\n"
 
 wrong :: IO ()
-wrong = putStrLn "Wrong command."
+wrong = putStrLn "\nWrong command.\n"
 
 parseCmd :: Playlist -> [String] -> IO ()
 parseCmd pl [c] = case map toLower c of
-                    "add"     -> putStrLn "add error: please write the path of the song." >> menu False pl
-                    "check"   -> putStrLn "Checking playlist...\n" >>
+                    "add"     -> putStrLn "\nadd error: please write the path of the song.\n" >> menu False pl
+                    "check"   -> putStrLn "\nChecking playlist...\n" >>
                                  check pl >>
                                  menu False pl
-                    "convert" -> putStrLn "convert error: please specify the format you want to convert to." >>
+                    "combine" -> putStrLn "\ncombine error: please specify the playlist you want to combine with.\n" >>
+                                 menu False pl
+                    "convert" -> putStrLn "\nconvert error: please specify the format you want to convert to.\n" >>
                                  menu False pl
                     "exit"    -> goodbye
-                    "export"  -> putStrLn "Exporting playlist...\n" >>
+                    "export"  -> putStrLn "\nExporting playlist...\n" >>
                                  export pl >>
                                  menu False pl
                     "help"    -> putStrLn mhelp >> menu False pl
-                    "load"    -> putStrLn "load error: please specify the playlist to load."
+                    "load"    -> putStrLn "\nload error: please specify the playlist to load.\n"
                     "print"   -> plPrint pl >> menu False pl 
                     "quit"    -> goodbye
-                    "rmv"     -> putStrLn "rmv error: please write the path of the song." >> menu False pl
+                    "rmv"     -> putStrLn "\nrmv error: please write the path of the song.\n" >> menu False pl
                     _         -> wrong >> menu False pl
 parseCmd pl (c:fp) = case map toLower c of
                        "add"     -> do let gfp = intercalate " " fp
                                        exists <- doesFileExist gfp
                                        if not exists then
-                                         putStrLn "add error: file does not exist." >> menu False pl
-                                       else do putStrLn ("Adding " ++ gfp ++ " to playlist...\n")
+                                         putStrLn "\nadd error: file does not exist.\n" >> menu False pl
+                                       else do putStr ("\nAdding " ++ gfp ++ " to playlist... ")
                                                let newpl = addP pl gfp
                                                let ext = getExt (getPath pl)
                                                write ext newpl
+                                               putStrLn "done!\n"
                                                load False (getPath newpl)
+                       "combine" -> let comb = intercalate " " fp
+                                    in combinePl pl comb >>
+                                       menu False pl
                        "convert" -> let format = intercalate " " fp
                                     in convert pl format >>
                                        menu False pl
                        "load"    -> let gfp = intercalate " " fp
                                     in load True gfp
                        "rmv"     -> do let gfp = intercalate " " fp
-                                       putStrLn ("Removing " ++ gfp ++ " from playlist...\n")
+                                       putStr ("\nRemoving " ++ gfp ++ " from playlist... ")
                                        let newpl = rmP pl gfp
                                        let ext = getExt (getPath pl)
                                        write ext newpl
+                                       putStrLn "done!\n"
                                        load False (getPath newpl)
                        _         -> wrong >> menu False pl
 parseCmd pl _ = wrong >> menu False pl
@@ -110,7 +126,7 @@ parseCmd pl _ = wrong >> menu False pl
 copySong :: String -> Song -> IO ()
 copySong name fp = do exists <- doesFileExist fp
                       if not exists then
-                        putStrLn ("Error exporting: file " ++ fp ++ " does not exist.")
+                        putStrLn ("\nError exporting: file " ++ fp ++ " does not exist.")
                       else do copyFileWithMetadata fp (name F.</> song)
                               putStrLn ("Copied "++song)
                               where song = takeFileName fp
@@ -119,11 +135,11 @@ export :: Playlist -> IO ()
 export pl = do let pname = F.takeBaseName (getPath pl)
                createDirectoryIfMissing False pname
                mapM_ (\a -> copySong pname a) $ getSongs pl
-               putStrLn "Export complete!"
+               putStrLn "\nExport complete!\n"
 
 plPrint :: Playlist -> IO ()
 plPrint pl = let pname = F.takeBaseName (getPath pl)
-             in putStrLn ("\nPlaylist " ++ pname ++ "\n") >>
+             in putStrLn ("\nPlaylist: " ++ pname ++ "\n") >>
                 mapM_ putStrLn (getSongs pl) >> putStrLn ""
 
 checkSong :: Song -> IO ()
@@ -134,20 +150,33 @@ checkSong s = do b <- doesFileExist s
 
 check :: Playlist -> IO ()
 check pl = do mapM_ checkSong $ getSongs pl
-              putStrLn ("Checking complete!")
+              putStrLn ("\nChecking complete!\n")
 
 convert :: Playlist -> String -> IO ()
-convert pl fmat = if (length fmat) > 4 then putStrLn "convert error: wrong format" else --this check is stupid, improve it laterfget
+convert pl fmat = if (length fmat) > 5 then putStrLn "\nconvert error: wrong format.\n" else --this check is stupid, improve it later
                   let plf = tail $ F.takeExtension (getPath pl)
                       lfmat = map toLower fmat
-                  in if plf == lfmat then putStrLn "convert error: the playlist is already in this format."
+                  in if plf == lfmat then putStrLn "\nconvert error: the playlist is already in this format.\n"
                      else let ext = getExt ("." ++ lfmat)
                           in case ext of
-                               Other -> putStrLn "convert error: format not supported"
+                               Other -> putStrLn "\nconvert error: format not supported\n"
                                _     -> let newfp = F.replaceExtension (getPath pl) lfmat
                                             auxPl = (Pl newfp (getSongs pl))
                                         in write ext auxPl >>
-                                           putStrLn "Conversion complete! Load the new file if you want to edit it."
+                                           putStrLn ("\nConversion complete! Load the new file ("++(takeFileName newfp)++") if you want to edit it.\n")
+
+combinePl :: Playlist -> String -> IO ()
+combinePl pl comb = do pl' <- getPlaylist comb
+                       if (null $ getSongs pl') then (putStrLn "\ncombine error: trying to combine with an empty playlist.\n")
+                       else let songs = getSongs pl
+                                songs' = getSongs pl'
+                                path = getPath pl
+                                ext = getExt path
+                                newpath = replaceBaseName path ((takeBaseName path) ++ (takeBaseName comb))
+                                newsongs = songs ++ songs'
+                                newpl = (Pl newpath newsongs)
+                            in do write ext newpl
+                                  putStrLn ("\nDone! Playlists combined in " ++ (takeFileName newpath) ++ "\n")
 
 parse :: Ext -> String -> IO [Song]
 parse M3u = parseM3u
