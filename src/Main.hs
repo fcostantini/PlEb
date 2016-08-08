@@ -26,6 +26,7 @@ main = getArgs >>= parseArgs
 help, mhelp, vers :: String
 help = "Usage: PlEb [-h] [-v] [playlist]\nAvailable formats are: m3u, m3u8, pls, wpl and xspf."
 mhelp = "\nadd song_path: adds song to the playlist (if it exists).\n"++
+        "add_dir dir: adds directory to the playlist (if it exists).\n" ++
         "check: checks if the playlist has inexistent files.\n"++
         "combine pl: combines present playlist with the provided one.\n"++
         "convert format: converts to desired format.\n"++
@@ -62,7 +63,7 @@ parseArgs _ = putStrLn "Incorrect execution. Use -h for help"
 
 menu :: Bool -> Playlist -> IO ()
 menu b pl = do let pname = F.takeBaseName (getPath pl)
-               when b (putStrLn $ "\nPlaylist " ++ pname ++ " loaded.\n\nAvailable commands: add, check, combine, convert, exit/quit, export, help, load, print, rmv. Use help for further information.\n")
+               when b (putStrLn $ "\nPlaylist " ++ pname ++ " loaded.\n\nAvailable commands: add, add_dir, check, combine, convert, exit/quit, export, help, load, print, rmv. Use help for further information.\n")
                putStr ">"
                hFlush stdout
                getLine >>= ((parseCmd pl) . words)
@@ -76,6 +77,7 @@ wrong = putStrLn "\nWrong command.\n"
 parseCmd :: Playlist -> [String] -> IO ()
 parseCmd pl [c] = case map toLower c of
                     "add"     -> putStrLn "\nadd error: please write the path of the song.\n" >> menu False pl
+                    "add_dir" -> putStrLn "\nadd_dir error: please write the path of the directory.\n" >> menu False pl
                     "check"   -> putStrLn "\nChecking playlist...\n" >>
                                  check pl >>
                                  menu False pl
@@ -94,16 +96,10 @@ parseCmd pl [c] = case map toLower c of
                     "rmv"     -> putStrLn "\nrmv error: please write the path of the song.\n" >> menu False pl
                     _         -> wrong >> menu False pl
 parseCmd pl (c:fp) = case map toLower c of
-                       "add"     -> do let gfp = intercalate " " fp
-                                       exists <- doesFileExist gfp
-                                       if not exists then
-                                         putStrLn "\nadd error: file does not exist.\n" >> menu False pl
-                                       else do putStr ("\nAdding " ++ gfp ++ " to playlist... ")
-                                               let newpl = addP pl gfp
-                                               let ext = getExt (getPath pl)
-                                               write ext newpl
-                                               putStrLn "done!\n"
-                                               load False (getPath newpl)
+                       "add"     -> let gfp = intercalate " " fp
+                                    in addSong pl gfp >>= (\pl -> menu False pl)
+                       "add_dir" -> let gfp = intercalate " " fp
+                                    in addDir gfp pl >>= (\pl -> menu False pl)
                        "combine" -> let comb = intercalate " " fp
                                     in combinePl pl comb >>
                                        menu False pl
@@ -111,18 +107,40 @@ parseCmd pl (c:fp) = case map toLower c of
                                     in convert pl format >>
                                        menu False pl
                        "load"    -> let gfp = intercalate " " fp
-                                    in load True gfp
-                       "rmv"     -> do let gfp = intercalate " " fp
-                                       putStr ("\nRemoving " ++ gfp ++ " from playlist... ")
-                                       let newpl = rmP pl gfp
-                                       let ext = getExt (getPath pl)
-                                       write ext newpl
-                                       putStrLn "done!\n"
-                                       load False (getPath newpl)
+                                    in load True gfp 
+                       "rmv"     -> let gfp = intercalate " " fp
+                                    in rmvSong pl gfp >>= (\pl -> menu False pl)
                        _         -> wrong >> menu False pl
 parseCmd pl _ = wrong >> menu False pl
 
---TODO: maybe add stats?
+addSong :: Playlist -> F.FilePath -> IO Playlist
+addSong pl s = do exists <- doesFileExist s
+                  if not exists then
+                    putStrLn "\nadd error: file does not exist.\n" >> return pl
+                  else do putStr ("Adding " ++ s ++ " to playlist... ")
+                          let newpl = addP pl s
+                          let ext = getExt (getPath pl)
+                          write ext newpl
+                          putStrLn "done!\n"
+                          return newpl
+
+addDir :: F.FilePath -> Playlist -> IO Playlist
+addDir d pl = do exists <- doesDirectoryExist d
+                 if not exists then
+                   putStrLn "\nadd_dir error: directory does not exist.\n" >> return pl
+                 else do putStr ("\nAdding songs in " ++ d ++ " to playlist... \n\n")
+                         contents <- listDirectory d
+                         newpl <- foldM addSong pl contents
+                         return newpl
+
+rmvSong :: Playlist -> F.FilePath -> IO Playlist
+rmvSong pl s = do putStr ("\nRemoving " ++ s ++ " from playlist... ")
+                  let newpl = rmP pl s
+                  let ext = getExt (getPath pl)
+                  write ext newpl
+                  putStrLn "done!\n"
+                  return newpl
+
 copySong :: String -> Song -> IO ()
 copySong name fp = do exists <- doesFileExist fp
                       if not exists then

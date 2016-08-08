@@ -25,6 +25,7 @@ To load a playlist:
 **Note:** add and rmv actually modify the file, you may want to do a backup before.  
 
     add: adds a song to the playlist.  
+    add_dir: adds a directory to the playlist.  
     check: checks if the songs actually exist.  
     combine: combines playlists.  
     convert: converts the playlist to another format.  
