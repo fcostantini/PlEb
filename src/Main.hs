@@ -15,13 +15,15 @@ import Text.XML.Light
 
 import HandleE
 import M3u
+import Parsing
 import Playlist
 import Pls
 import Wpl
 import Xspf
 
 main :: IO ()
-main = getArgs >>= parseArgs
+main = do args <- getArgs
+          runArgs (parseArgs args)
 
 help, mhelp, vers :: String
 help = "Usage: PlEb [-h] [-v] [playlist]\nAvailable formats are: m3u, m3u8, pls, wpl and xspf."
@@ -54,12 +56,11 @@ getPlaylist file = let ext = getExt file
                                 Right cont -> do songs <- parse ext cont
                                                  return $ (Pl file songs)
 
-parseArgs :: [String] -> IO ()
-parseArgs ["-h"] = putStrLn help 
-parseArgs ["-v"] = putStrLn vers
-parseArgs [file] = load True file
-parseArgs [] = putStrLn "Missing arguments"
-parseArgs _ = putStrLn "Incorrect execution. Use -h for help"
+runArgs :: Arg -> IO ()
+runArgs Help = putStrLn help 
+runArgs Vers = putStrLn vers
+runArgs (Playlist f) = load True f
+runArgs Wrong = putStrLn "Incorrect execution. Use -h for help"
 
 menu :: Bool -> Playlist -> IO ()
 menu b pl = do let pname = F.takeBaseName (getPath pl)
