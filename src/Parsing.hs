@@ -23,6 +23,7 @@ data Cmd = Add F.FilePath
          | Load F.FilePath
          | Print
          | Rmv F.FilePath
+         | Seq Cmd Cmd
          | CWrong deriving Show
 
 lineCmd :: Parser [[Cmd]]
@@ -32,24 +33,24 @@ fullCmd :: Parser [Cmd]
 fullCmd = sepBy cmd (char '>')
 
 cmd :: Parser Cmd
-cmd = choice [try add, try addD, try check, try comb, try conv, try exit, try export, try help, try load, try cprint, try rmv, wrong]
+cmd = choice [try addP, try addD, try checkP, try comb, try conv, try exitP, try exportP, try helpP, try loadP, try printP, try rmvP, wrongP]
 
 stuff = many (noneOf ">\n\r")
 stuff1 = many1 (noneOf ">\n\r")
 
-add :: Parser Cmd
-add = do string "add "
-         f <- stuff
-         return $ Add f
+addP :: Parser Cmd
+addP = do string "add "
+          f <- stuff
+          return $ Add f
 
 addD :: Parser Cmd
 addD = do string "add_dir "
           f <- stuff
           return $ Add f
 
-check :: Parser Cmd
-check = do string "check"
-           choice [stuff1 >> return CWrong, return Check]
+checkP :: Parser Cmd
+checkP = do string "check"
+            choice [stuff1 >> return CWrong, return Check]
 
 comb :: Parser Cmd
 comb = do string "combine "
@@ -61,39 +62,44 @@ conv = do string "convert"
           f <- stuff
           return $ Conv f
 
-exit :: Parser Cmd
-exit = (do string "exit"
-           choice [stuff1 >> return CWrong, return Exit])
-   <|> (do string "quit"
-           choice [stuff1 >> return CWrong, return Exit])
+exitP :: Parser Cmd
+exitP = (do string "exit"
+            choice [stuff1 >> return CWrong, return Exit])
+    <|> (do string "quit"
+            choice [stuff1 >> return CWrong, return Exit])
 
-export :: Parser Cmd
-export = do string "export"
-            choice [stuff1 >> return CWrong, return Check]
+exportP :: Parser Cmd
+exportP = do string "export"
+             choice [stuff1 >> return CWrong, return Check]
 
-help :: Parser Cmd
-help = do string "help"
-          choice [stuff1 >> return CWrong, return HelpC]
+helpP :: Parser Cmd
+helpP = do string "help"
+           choice [stuff1 >> return CWrong, return HelpC]
 
-load :: Parser Cmd
-load = do string "load "
-          f <- stuff
-          return $ Load f
+loadP :: Parser Cmd
+loadP = do string "load "
+           f <- stuff
+           return $ Load f
 
-cprint :: Parser Cmd
-cprint = do string "print"
+printP :: Parser Cmd
+printP = do string "print"
             choice [stuff1 >> return CWrong, return Print]
 
-rmv :: Parser Cmd
-rmv = do string "rmv "
-         f <- stuff
-         return $ Rmv f
+rmvP :: Parser Cmd
+rmvP = do string "rmv "
+          f <- stuff
+          return $ Rmv f
 
-wrong :: Parser Cmd
-wrong = stuff >> return CWrong 
+wrongP :: Parser Cmd
+wrongP = stuff >> return CWrong 
 
-parseCmd :: String -> IO [Cmd]
-parseCmd c = let parsed = parse lineCmd "" c
-             in case parsed of
-                  Left e -> putStrLn ("Error parsing command " ++ (show e)) >> return []
-                  Right cl -> return (concat cl)
+toCmd :: [Cmd] -> Cmd
+toCmd [] = error "Shouldn't happen..."
+toCmd [e] = e
+toCmd (c:cmds) = Seq c (toCmd cmds)
+
+parseComd :: String -> IO Cmd
+parseComd c = let parsed = parse lineCmd "" c
+              in case parsed of
+                  Left e -> putStrLn ("Error parsing command " ++ (show e)) >> return CWrong
+                  Right cl -> return $ (toCmd . concat) cl

@@ -8,12 +8,12 @@ data Ext = M3u | Pls | Wpl | Xspf | Other deriving Eq
 data Playlist = Pl {getPath :: F.FilePath,
                     getSongs :: [Song]} deriving Show
 
-addP :: Playlist -> Song -> Playlist
-addP pl s = pl {getSongs = (getSongs pl) ++ [s]}
+addS :: Playlist -> Song -> Playlist
+addS pl s = pl {getSongs = (getSongs pl) ++ [s]}
 
 --removes all occurrences of the song
-rmP :: Playlist -> Song -> Playlist
-rmP pl s = pl {getSongs = filter (/=s) (getSongs pl)}
+rmS :: Playlist -> Song -> Playlist
+rmS pl s = pl {getSongs = filter (/=s) (getSongs pl)}
 
 getExt :: F.FilePath -> Ext
 getExt fp = case F.takeExtension fp of
