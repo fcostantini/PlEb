@@ -2,9 +2,11 @@ module Main where
 
 import Control.Exception
 import Control.Monad
+import Control.Monad.IO.Class
 import Data.Char
 import Data.List
 import Data.Maybe
+import System.Console.Haskeline
 import System.Directory
 import System.Environment
 import System.Exit
@@ -73,13 +75,23 @@ runArgs (Playlist f) = load True f
 runArgs Wrong = putStrLn "Incorrect execution. Use -h for help" >> exitSuccess
 
 menu :: Bool -> Playlist -> IO Playlist
-menu b pl = do let pname = F.takeBaseName (getPath pl)
+{-menu b pl = do let pname = F.takeBaseName (getPath pl)
                when b (putStrLn $ "\nPlaylist " ++ pname ++ " loaded.\n\nAvailable commands: add, add_dir, check, combine, convert, exit/quit, export, help, load, print, rmv. Use help for further information.\n")
                putStr ">"
                hFlush stdout
                input <- getLine
                cmd <- parseComd (input++"\n")
-               runCmd cmd pl >>= (\p -> menu False p)
+               runCmd cmd pl >>= (\p -> menu False p)-}
+menu b pl = (runInputT (defaultSettings {historyFile = hfile}) loop) >>= (\p -> menu False p)
+            where loop :: InputT IO Playlist
+                  loop = do let pname = F.takeBaseName (getPath pl)
+                            when b $ liftIO (putStrLn $ "\nPlaylist " ++ pname ++ " loaded.\n\nAvailable commands: add, add_dir, check, combine, convert, exit/quit, export, help, load, print, rmv. Use help for further information.\n")
+                            input <- getInputLine "> "
+                            case input of
+                                Nothing -> return pl
+                                Just c -> do cmd <- liftIO $ parseComd (c++"\n")
+                                             liftIO $ runCmd cmd pl
+                  hfile = Just ".PlEb_history" -- fixed path?
 
 trim :: String -> String
 trim = filter (/= ' ')
