@@ -15,44 +15,13 @@ import System.IO
 import System.IO.Strict as STR
 import Text.XML.Light
 
-import HandleE
 import M3u
+import Misc
 import Parsing
 import Playlist
 import Pls
 import Wpl
 import Xspf
-
-help, mhelp, vers :: String
-help = "Usage: PlEb [-h] [-v] [playlist]\nAvailable formats are: m3u, m3u8, pls, wpl and xspf."
-mhelp = "\nadd song_path: adds song to the playlist (if it exists).\n"++
-        "add_dir dir: adds directory to the playlist (if it exists).\n" ++
-        "check: checks if the playlist has inexistent files.\n"++
-        "combine pl: combines present playlist with the provided one.\n"++
-        "convert format: converts to desired format.\n"++
-        "exit/quit: terminates the program.\n"++
-        "export: creates a folder with the songs on the playlist.\n"++
-        "load pl: loads a playlist.\n"++
-        "print: prints the content of the playlist.\n"++
-        "rmv song_path: removes song from the playlist (if it exists).\n"
-vers = "PlEb 1.0.0"
-warning = "\n---------------------------------------------------------------------------------\n"++
-          "WARNING: found no songs in playlist (this is okay if you are using an empty one).\n"++
-          "---------------------------------------------------------------------------------\n"
-
-parse :: Ext -> String -> IO [Song]
-parse M3u = parseM3u
-parse Pls = parsePls
-parse Wpl = parseWpl
-parse Xspf = parseXspf
-parse _ = \_ -> return []
-
-write :: Ext -> Playlist -> IO ()
-write M3u = writeM3u
-write Pls = writePls
-write Wpl = writeWpl
-write Xspf = writeXspf
-write _ = \_ -> return ()
 
 getPlaylist :: F.FilePath -> IO Playlist
 getPlaylist file = let ext = getExt file
@@ -75,14 +44,7 @@ runArgs (Playlist f) = load True f
 runArgs Wrong = putStrLn "Incorrect execution. Use -h for help" >> exitSuccess
 
 menu :: Bool -> Playlist -> IO Playlist
-{-menu b pl = do let pname = F.takeBaseName (getPath pl)
-               when b (putStrLn $ "\nPlaylist " ++ pname ++ " loaded.\n\nAvailable commands: add, add_dir, check, combine, convert, exit/quit, export, help, load, print, rmv. Use help for further information.\n")
-               putStr ">"
-               hFlush stdout
-               input <- getLine
-               cmd <- parseComd (input++"\n")
-               runCmd cmd pl >>= (\p -> menu False p)-}
-menu b pl = (runInputT (defaultSettings {historyFile = hfile}) loop) >>= (\p -> menu False p)
+menu b pl = (runInputT mySettings loop) >>= (\p -> menu False p)
             where loop :: InputT IO Playlist
                   loop = do let pname = F.takeBaseName (getPath pl)
                             when b $ liftIO (putStrLn $ "\nPlaylist " ++ pname ++ " loaded.\n\nAvailable commands: add, add_dir, check, combine, convert, exit/quit, export, help, load, print, rmv. Use help for further information.\n")
@@ -91,10 +53,6 @@ menu b pl = (runInputT (defaultSettings {historyFile = hfile}) loop) >>= (\p -> 
                                 Nothing -> return pl
                                 Just c -> do cmd <- liftIO $ parseComd (c++"\n")
                                              liftIO $ runCmd cmd pl
-                  hfile = Just ".PlEb_history" -- fixed path?
-
-trim :: String -> String
-trim = filter (/= ' ')
 
 runCmd :: Cmd -> Playlist -> IO Playlist
 runCmd (Add s) pl = case trim s of
