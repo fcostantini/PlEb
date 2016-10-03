@@ -70,7 +70,7 @@ exitP = (do string "exit"
 
 exportP :: Parser Cmd
 exportP = do string "export"
-             choice [stuff1 >> return CWrong, return Check]
+             choice [stuff1 >> return CWrong, return Export]
 
 helpP :: Parser Cmd
 helpP = do string "help"

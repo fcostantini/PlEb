@@ -54,15 +54,15 @@ addDir d pl = do exists <- doesDirectoryExist d
                          putStrLn $ ppReport r
                          return newpl
 
-checkSong :: Song -> IO ()
-checkSong s = do b <- doesFileExist s
+checkSong :: Song -> RState ()
+checkSong s = do b <- lift $ doesFileExist s
                  case b of
-                    True -> putStrLn ("Ok " ++ F.takeBaseName s)
-                    False -> putStrLn (s ++ " does NOT exist in the file system. It's recommended to remove it from the playlist.")
+                    True -> lift (putStrLn ("Ok " ++ F.takeBaseName s)) >> good
+                    False -> badError (s ++ " does NOT exist in the file system.\n")
 
 check :: Playlist -> IO Playlist
-check pl = do mapM_ checkSong $ getSongs pl
-              putStrLn ("\nChecking complete!\n")
+check pl = do r <- execStateT (mapM_ checkSong (getSongs pl)) iReport
+              putStrLn $ ppReport r
               return pl
 
 combinePl :: Playlist -> String -> IO Playlist
@@ -92,19 +92,20 @@ convert pl fmat = if (length fmat) > 5 then putStrLn "\nconvert error: wrong for
                                         in write ext auxPl >>
                                            putStrLn ("\nConversion complete! Load the new file ("++(takeFileName newfp)++") if you want to edit it.\n") >> return pl
 
-exportSong :: String -> Song -> IO ()
-exportSong name fp = do exists <- doesFileExist fp
+exportSong :: String -> Song -> RState ()
+exportSong name fp = do exists <- lift $ doesFileExist fp
                         if not exists then
-                          putStrLn ("\nError exporting: file " ++ fp ++ " does not exist.")
-                        else do copyFileWithMetadata fp (name F.</> song)
-                                putStrLn ("Copied "++song)
+                          badError ("\nexport error: file " ++ fp ++ " does not exist.")
+                        else do lift $ copyFileWithMetadata fp (name F.</> song)
+                                lift $ putStrLn ("Copied "++song)
+                                good
                                 where song = takeFileName fp
 
 export :: Playlist -> IO Playlist
 export pl = do let pname = F.takeBaseName (getPath pl)
                createDirectoryIfMissing False pname
-               mapM_ (\a -> exportSong pname a) $ getSongs pl
-               putStrLn "\nExport complete!\n"
+               r <- execStateT (mapM_ (\a -> exportSong pname a) (getSongs pl)) iReport
+               putStrLn $ ppReport r
                return pl
 
 plPrint :: Playlist -> IO Playlist
@@ -113,9 +114,11 @@ plPrint pl = let pname = F.takeBaseName (getPath pl)
                 mapM_ putStrLn (getSongs pl) >> putStrLn "" >> return pl
 
 rmvSong :: Playlist -> F.FilePath -> IO Playlist
-rmvSong pl s = do putStr ("\nRemoving " ++ s ++ " from playlist... ")
-                  let newpl = rmS pl s
-                  let ext = getExt (getPath pl)
-                  write ext newpl
-                  putStrLn "done!\n"
-                  return newpl
+rmvSong pl s = case elem s (getSongs pl) of
+                 False -> putStrLn ("remove error: " ++ s ++ "is not in the playlist.\n") >> return pl
+                 _ -> do putStr ("\nRemoving " ++ s ++ " from playlist... ")
+                         let newpl = rmS pl s
+                         let ext = getExt (getPath pl)
+                         write ext newpl
+                         putStrLn "done!\n"
+                         return newpl
