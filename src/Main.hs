@@ -2,6 +2,7 @@ module Main where
 
 import Control.Monad
 import Control.Monad.IO.Class
+import Control.Monad.Trans.State
 import Data.List
 import System.Console.Haskeline
 import System.Directory
@@ -14,6 +15,7 @@ import Misc
 import Operations
 import Parsing
 import Playlist
+import Report
 
 runArgs :: Arg -> IO Playlist
 runArgs Help = putStrLn help >> exitSuccess

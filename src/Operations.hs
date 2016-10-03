@@ -2,6 +2,8 @@ module Operations where
 
 import Control.Exception
 import Control.Monad
+import Control.Monad.Trans.Class
+import Control.Monad.Trans.State
 import Data.Char
 import System.Directory
 import System.Exit
@@ -12,6 +14,7 @@ import System.IO.Strict as STR
 
 import Misc
 import Playlist
+import Report
 
 getPlaylist :: F.FilePath -> IO Playlist
 getPlaylist file = let ext = getExt file
@@ -23,23 +26,29 @@ getPlaylist file = let ext = getExt file
                                                  return $ (Pl file songs)
 
 addSong :: Playlist -> F.FilePath -> IO Playlist
-addSong pl s = do exists <- doesFileExist s
-                  if not exists then
-                    putStrLn ("\nadd error: file " ++ s ++ " does not exist.\n") >> return pl
-                  else do putStr ("Adding " ++ s ++ " to playlist... ")
-                          let newpl = addS pl s
-                          let ext = getExt (getPath pl)
-                          write ext newpl
-                          putStrLn "done!\n"
-                          return newpl
+addSong pl s = do (newpl, r) <- runStateT (addSong' pl s) iReport
+                  putStrLn $ ppReport r
+                  return newpl
+
+addSong' :: Playlist -> F.FilePath -> RState Playlist
+addSong' pl s = do exists <- lift $ doesFileExist s
+                   if not exists then
+                     badError ("\nadd error: file " ++ s ++ " does not exist.\n") >> return pl
+                   else do lift $ putStr ("\nAdding " ++ s ++ " to playlist... ")
+                           let newpl = addS pl s
+                           let ext = getExt (getPath pl)
+                           lift $ write ext newpl
+                           lift $ putStrLn "done!\n"
+                           good >> return newpl
 
 addDir :: F.FilePath -> Playlist -> IO Playlist
 addDir d pl = do exists <- doesDirectoryExist d
                  if not exists then
                    putStrLn ("\nadd_dir error: directory " ++ d ++ " does not exist.\n") >> return pl
-                 else do putStr ("\nAdding songs in " ++ d ++ " to playlist... \n\n")
+                 else do putStrLn ("\nAdding songs in " ++ d ++ " to playlist... \n")
                          contents <- listDirectory d
-                         newpl <- foldM addSong pl contents
+                         (newpl, r) <- runStateT (foldM addSong' pl contents) iReport
+                         putStrLn $ ppReport r
                          return newpl
 
 checkSong :: Song -> IO ()

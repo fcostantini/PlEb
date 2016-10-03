@@ -33,7 +33,7 @@ fullCmd :: Parser [Cmd]
 fullCmd = sepBy cmd (char '>')
 
 cmd :: Parser Cmd
-cmd = choice [try addP, try addD, try checkP, try comb, try conv, try exitP, try exportP, try helpP, try loadP, try printP, try rmvP, wrongP]
+cmd = choice [try addD, try addP, try checkP, try comb, try conv, try exitP, try exportP, try helpP, try loadP, try printP, try rmvP, wrongP]
 
 stuff = many (noneOf ">\n\r")
 stuff1 = many1 (noneOf ">\n\r")
@@ -46,7 +46,7 @@ addP = do string "add "
 addD :: Parser Cmd
 addD = do string "add_dir "
           f <- stuff
-          return $ Add f
+          return $ AddD f
 
 checkP :: Parser Cmd
 checkP = do string "check"
