@@ -16,6 +16,8 @@ import Misc
 import Playlist
 import Report
 
+--should paths be absolute?
+
 getPlaylist :: F.FilePath -> IO Playlist
 getPlaylist file = let ext = getExt file
                    in if ext == Other then putStrLn ("Unsupported format.") >> exitSuccess
@@ -47,7 +49,8 @@ addDir d pl = do exists <- doesDirectoryExist d
                    putStrLn ("\nadd_dir error: directory " ++ d ++ " does not exist.\n") >> return pl
                  else do putStrLn ("\nAdding songs in " ++ d ++ " to playlist... \n")
                          contents <- listDirectory d
-                         (newpl, r) <- runStateT (foldM addSong' pl contents) iReport
+                         let paths = map (\x -> d ++ "/" ++ x) contents
+                         (newpl, r) <- runStateT (foldM addSong' pl paths) iReport
                          putStrLn $ ppReport r
                          return newpl
 
