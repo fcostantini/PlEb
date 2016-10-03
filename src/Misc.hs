@@ -42,10 +42,10 @@ commandList = ["add", "add_dir", "check", "combine", "convert", "exit", "export"
 searchFunc :: String -> [Completion]
 searchFunc str = map simpleCompletion $ filter (str `isPrefixOf`) commandList
 
-mySettings :: Settings IO
-mySettings = Settings { historyFile = Just ".PlEb_history", --fixed path?
-                        complete = completeFilename, --completeWord Nothing " \t" $ return . searchFunc, 
-                        autoAddHistory = True }
+mySettings :: FilePath -> Settings IO
+mySettings fp = Settings { historyFile = Just (fp++"/.PlEb_history"),
+                           complete = completeFilename, --completeWord Nothing " \t" $ return . searchFunc, 
+                           autoAddHistory = True }
 
 trim :: String -> String
 trim = filter (/= ' ')

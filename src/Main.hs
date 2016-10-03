@@ -4,6 +4,7 @@ import Control.Monad
 import Control.Monad.IO.Class
 import Data.List
 import System.Console.Haskeline
+import System.Directory
 import System.Environment
 import System.Exit
 import System.FilePath as F
@@ -26,7 +27,8 @@ load b file = do playlist <- getPlaylist file
                  menu b playlist
 
 menu :: Bool -> Playlist -> IO Playlist
-menu b pl = (runInputT mySettings loop) >>= (\p -> menu False p)
+menu b pl = do home <- getHomeDirectory --history file will be located here
+               (runInputT (mySettings home) loop) >>= (\p -> menu False p)
             where loop :: InputT IO Playlist
                   loop = do let pname = F.takeBaseName (getPath pl)
                             when b $ liftIO (putStrLn $ "\nPlaylist " ++ pname ++ " loaded.\n\nAvailable commands: add, add_dir, check, combine, convert, exit/quit, export, help, load, print, rmv. Use help for further information.\n")

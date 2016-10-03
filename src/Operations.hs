@@ -25,7 +25,7 @@ getPlaylist file = let ext = getExt file
 addSong :: Playlist -> F.FilePath -> IO Playlist
 addSong pl s = do exists <- doesFileExist s
                   if not exists then
-                    putStrLn "\nadd error: file does not exist.\n" >> return pl
+                    putStrLn ("\nadd error: file " ++ s ++ " does not exist.\n") >> return pl
                   else do putStr ("Adding " ++ s ++ " to playlist... ")
                           let newpl = addS pl s
                           let ext = getExt (getPath pl)
@@ -36,7 +36,7 @@ addSong pl s = do exists <- doesFileExist s
 addDir :: F.FilePath -> Playlist -> IO Playlist
 addDir d pl = do exists <- doesDirectoryExist d
                  if not exists then
-                   putStrLn "\nadd_dir error: directory does not exist.\n" >> return pl
+                   putStrLn ("\nadd_dir error: directory " ++ d ++ " does not exist.\n") >> return pl
                  else do putStr ("\nAdding songs in " ++ d ++ " to playlist... \n\n")
                          contents <- listDirectory d
                          newpl <- foldM addSong pl contents
@@ -46,7 +46,7 @@ checkSong :: Song -> IO ()
 checkSong s = do b <- doesFileExist s
                  case b of
                     True -> putStrLn ("Ok " ++ F.takeBaseName s)
-                    False -> putStrLn (s ++ " does NOT exist in the file system!!! It's recommended to remove it from the playlist.")
+                    False -> putStrLn (s ++ " does NOT exist in the file system. It's recommended to remove it from the playlist.")
 
 check :: Playlist -> IO Playlist
 check pl = do mapM_ checkSong $ getSongs pl
