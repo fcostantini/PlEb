@@ -13,6 +13,7 @@ import Xspf
 
 help, mhelp, vers :: String
 help = "Usage: PlEb [-h] [-v] [playlist]\nAvailable formats are: m3u, m3u8, pls, wpl and xspf."
+
 mhelp = "\nadd song_path: adds song to the playlist (if it exists).\n"++
         "add_dir dir: adds directory to the playlist (if it exists).\n" ++
         "check: checks if the playlist has inexistent files.\n"++
@@ -23,7 +24,9 @@ mhelp = "\nadd song_path: adds song to the playlist (if it exists).\n"++
         "load pl: loads a playlist.\n"++
         "print: prints the content of the playlist.\n"++
         "rmv song_path: removes song from the playlist (if it exists).\n"
+
 vers = "PlEb 1.0.0"
+
 warning = "\n---------------------------------------------------------------------------------\n"++
           "WARNING: found no songs in playlist (this is okay if you are using an empty one).\n"++
           "---------------------------------------------------------------------------------\n"
@@ -41,7 +44,7 @@ searchFunc str = map simpleCompletion $ filter (str `isPrefixOf`) commandList
 
 mySettings :: Settings IO
 mySettings = Settings { historyFile = Just ".PlEb_history", --fixed path?
-                        complete = completeWord Nothing " \t" $ return . searchFunc, --completeFilename
+                        complete = completeFilename, --completeWord Nothing " \t" $ return . searchFunc, 
                         autoAddHistory = True }
 
 trim :: String -> String
