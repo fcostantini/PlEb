@@ -1,5 +1,6 @@
 module Main where
 
+import Control.Exception
 import Control.Monad
 import Control.Monad.IO.Class
 import Control.Monad.Trans.State
@@ -18,10 +19,16 @@ import Parsing
 import Playlist
 import Report
 
+loadExec :: Bool -> F.FilePath -> Maybe String -> IO Playlist
+loadExec b file c = do playlist <- getPlaylist file
+                       when (null $ getSongs playlist) (putStrLn warning)
+                       case c of
+                         Nothing -> menu b playlist
+                         Just cmds -> do cmd <- parseComd cmds
+                                         runCmd cmd playlist
+
 load :: Bool -> F.FilePath -> IO Playlist
-load b file = do playlist <- getPlaylist file
-                 when (null $ getSongs playlist) (putStrLn warning)
-                 menu b playlist
+load b file = loadExec b file Nothing
 
 menu :: Bool -> Playlist -> IO Playlist
 menu b pl = do home <- getHomeDirectory --history file will be located here
@@ -59,7 +66,7 @@ runCmd Print pl = plPrint pl
 runCmd (Rmv s) pl = case trim s of
                       "" -> putStrLn "\nrmv error: please write the path of the song.\n" >> return pl
                       _  -> rmvSong pl s
-runCmd (Seq c1 c2) pl = runCmd c1 pl >>= runCmd c2
+runCmd (Seq c1 c2) pl = runCmd c1 pl >>= runCmd c2 --should it stop on error?
 runCmd CWrong pl = putStrLn "\nWrong command.\n" >> return pl
 
 runPleb :: [Flag] -> F.FilePath -> IO Playlist
@@ -69,7 +76,10 @@ runPleb fs p = do when (FHelp `elem` fs) (putStrLn (usageInfo header options) >>
                   let cfs = filter isCmds fs
                   case cfs of
                     [] -> load True p
-                    [Cmds f] -> load True p
+                    [Cmds f] -> do tcont <- tryJust handleRead (readFile f)
+                                   case tcont of
+                                     Left e -> putStrLn e >> exitSuccess
+                                     Right cmds -> loadExec True p (Just cmds)
                     _ -> putStrLn "Incorrect use of commands flag.\n" >> exitSuccess
                where isCmds (Cmds _) = True
                      isCmds _ = False

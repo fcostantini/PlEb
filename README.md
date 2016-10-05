@@ -16,9 +16,15 @@ It's recommended to add ~/.local/bin to your path for easier usage. You can also
 
 ## Usage  
 
-To load a playlist:  
+To load a playlist and use PlEb interactively:  
 
     $ PlEb playlist-file  
+
+As an alternative, it is possible to feed a file with operations to PlEb, which will try to execute them:  
+
+    $ PlEb playlist-file -c command-file  
+
+This file must have a single line with the desired commands, i.e., when providing more than one, they must be chained.  
 
 ### Operations  
 
@@ -32,6 +38,10 @@ To load a playlist:
     - print: shows contents of the playlist.  
     - rmv: removes a song from the playlist.  
     - exit/quit: exits the program.  
+
+Commands can be chained using '>'. For example, we can do the following:  
+
+    print>add song.mp3>print>quit
 
 **Notes:**  
 

@@ -11,7 +11,7 @@ data Flag = FHelp | Version | Cmds F.FilePath deriving (Eq, Show)
 options :: [OptDescr Flag]
 options = [ Option ['h'] ["help"] (NoArg FHelp) "Print this help message",
             Option ['v'] ["version"] (NoArg Version) "Show version number",
-            Option ['c'] ["commands"] (ReqArg Cmds "FILE") "Execute with commands in given file"
+            Option ['c'] ["commands"] (ReqArg Cmds "FILE") "Execute commands in given file"
           ]
 
 header = "Usage: PlEb [OPTION]... playlist\nAvailable formats are: m3u, m3u8, pls, wpl and xspf."
