@@ -1,16 +1,25 @@
 module Parsing where
 
+import System.Console.GetOpt
 import System.FilePath as F
+import System.IO.Error
 import Text.Parsec.Char
 import Text.ParserCombinators.Parsec
 
-data Arg = Help | Vers | Playlist F.FilePath | Wrong
+data Flag = FHelp | Version | Cmds F.FilePath deriving (Eq, Show)
 
-parseArgs :: [String] -> Arg
-parseArgs ["-h"] = Help
-parseArgs ["-v"] = Vers
-parseArgs [file] = Playlist file
-parseArgs _ = Wrong
+options :: [OptDescr Flag]
+options = [ Option ['h'] ["help"] (NoArg FHelp) "Print this help message",
+            Option ['v'] ["version"] (NoArg Version) "Show version number",
+            Option ['c'] ["commands"] (ReqArg Cmds "FILE") "Execute with commands in given file"
+          ]
+
+header = "Usage: PlEb [OPTION]... playlist\nAvailable formats are: m3u, m3u8, pls, wpl and xspf."
+
+plebOpts :: [String] -> IO ([Flag], [String])
+plebOpts argv = case getOpt Permute options argv of
+                  (o, f, []) -> return (o, f)
+                  (_, _, errs) -> ioError (userError (concat errs ++ usageInfo header options))
 
 data Cmd = Add F.FilePath
          | AddD F.FilePath

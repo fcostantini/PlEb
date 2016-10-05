@@ -4,6 +4,7 @@ import Control.Monad
 import Control.Monad.IO.Class
 import Control.Monad.Trans.State
 import Data.List
+import System.Console.GetOpt
 import System.Console.Haskeline
 import System.Directory
 import System.Environment
@@ -16,12 +17,6 @@ import Operations
 import Parsing
 import Playlist
 import Report
-
-runArgs :: Arg -> IO Playlist
-runArgs Help = putStrLn help >> exitSuccess
-runArgs Vers = putStrLn vers >> exitSuccess
-runArgs (Playlist f) = load True f
-runArgs Wrong = putStrLn "Incorrect execution. Use -h for help" >> exitSuccess
 
 load :: Bool -> F.FilePath -> IO Playlist
 load b file = do playlist <- getPlaylist file
@@ -67,7 +62,19 @@ runCmd (Rmv s) pl = case trim s of
 runCmd (Seq c1 c2) pl = runCmd c1 pl >>= runCmd c2
 runCmd CWrong pl = putStrLn "\nWrong command.\n" >> return pl
 
+runPleb :: [Flag] -> F.FilePath -> IO Playlist
+runPleb [] p = load True p
+runPleb fs p = do when (FHelp `elem` fs) (putStrLn (usageInfo header options) >> exitSuccess)
+                  when (Version `elem` fs) (putStrLn vers >> exitSuccess)
+                  let cfs = filter isCmds fs
+                  case cfs of
+                    [] -> load True p
+                    [Cmds f] -> load True p
+                    _ -> putStrLn "Incorrect use of commands flag.\n" >> exitSuccess
+               where isCmds (Cmds _) = True
+                     isCmds _ = False
+
 main :: IO ()
-main = do args <- getArgs
-          runArgs (parseArgs args)
+main = do (args, files) <- getArgs >>= plebOpts
+          runPleb args (concat files)
           exitSuccess

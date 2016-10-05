@@ -11,8 +11,7 @@ import Pls
 import Wpl
 import Xspf
 
-help, mhelp, vers :: String
-help = "Usage: PlEb [-h] [-v] [playlist]\nAvailable formats are: m3u, m3u8, pls, wpl and xspf."
+mhelp, vers :: String
 
 mhelp = "\nadd song_path: adds song to the playlist (if it exists).\n"++
         "add_dir dir: adds directory to the playlist (if it exists).\n" ++
@@ -25,7 +24,7 @@ mhelp = "\nadd song_path: adds song to the playlist (if it exists).\n"++
         "print: prints the content of the playlist.\n"++
         "rmv song_path: removes song from the playlist (if it exists).\n"
 
-vers = "PlEb 1.0.0"
+vers = "PlEb 1.3.0"
 
 warning = "\n---------------------------------------------------------------------------------\n"++
           "WARNING: found no songs in playlist (this is okay if you are using an empty one).\n"++
