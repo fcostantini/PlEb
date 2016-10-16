@@ -32,7 +32,7 @@ load b file = loadExec b file Nothing
 
 menu :: Bool -> Playlist -> IO Playlist
 menu b pl = do home <- getHomeDirectory --history file will be located here
-               (runInputT (mySettings home) loop) >>= (\p -> menu False p)
+               runInputT (mySettings home) loop >>= menu False
             where loop :: InputT IO Playlist
                   loop = do let pname = F.takeBaseName (getPath pl)
                             when b $ liftIO (putStrLn $ "\nPlaylist " ++ pname ++ " loaded.\n\nAvailable commands: add, add_dir, check, combine, convert, exit/quit, export, help, load, print, rmv. Use help for further information.\n")
@@ -49,20 +49,20 @@ runCmd (Add s) pl = case trim s of
 runCmd (AddD d) pl = case trim d of
                        "" -> putStrLn "\nadd_dir error: please write the path of the directory.\n" >> return pl
                        _  -> addDir d pl
-runCmd Check pl = putStrLn "\nChecking playlist...\n" >> check pl
+runCmd Check pl = putStrLn "\nChecking playlist...\n" >> check pl >> return pl
 runCmd (Comb p) pl = case trim p of
                        "" -> putStrLn "\ncombine error: please specify the playlist you want to combine with.\n" >> return pl
-                       _  -> combinePl pl p
+                       _  -> combinePl pl p >> return pl
 runCmd (Conv f) pl = case trim f of
                        "" -> putStrLn "\nconvert error: please specify the format you want to convert to.\n" >> return pl
-                       _  -> convert pl f
+                       _  -> convert pl f >> return pl
 runCmd Exit pl = putStrLn "\nGoodbye!\n" >> exitSuccess
-runCmd Export pl = putStrLn "\nExporting playlist...\n" >> export pl
+runCmd Export pl = putStrLn "\nExporting playlist...\n" >> export pl >> return pl
 runCmd HelpC pl = putStrLn mhelp >> return pl
 runCmd (Load p) pl = case trim p of
                        "" -> putStrLn "\nload error: please specify the playlist to load.\n" >> return pl
                        _  -> load True p
-runCmd Print pl = plPrint pl
+runCmd Print pl = plPrint pl >> return pl
 runCmd (Rmv s) pl = case trim s of
                       "" -> putStrLn "\nrmv error: please write the path of the song.\n" >> return pl
                       _  -> rmvSong pl s

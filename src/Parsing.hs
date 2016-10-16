@@ -9,10 +9,9 @@ import Text.ParserCombinators.Parsec
 data Flag = FHelp | Version | Cmds F.FilePath deriving (Eq, Show)
 
 options :: [OptDescr Flag]
-options = [ Option ['h'] ["help"] (NoArg FHelp) "Print this help message",
-            Option ['v'] ["version"] (NoArg Version) "Show version number",
-            Option ['c'] ["commands"] (ReqArg Cmds "FILE") "Execute commands in given file"
-          ]
+options = [Option ['h'] ["help"] (NoArg FHelp) "Print this help message",
+           Option ['v'] ["version"] (NoArg Version) "Show version number",
+           Option ['c'] ["commands"] (ReqArg Cmds "FILE") "Execute commands in given file"]
 
 header = "Usage: PlEb [OPTION]... playlist\nAvailable formats are: m3u, m3u8, pls, wpl and xspf."
 
@@ -110,5 +109,5 @@ toCmd (c:cmds) = Seq c (toCmd cmds)
 parseComd :: String -> IO Cmd
 parseComd c = let parsed = parse lineCmd "" c
               in case parsed of
-                  Left e -> putStrLn ("Error parsing command " ++ (show e)) >> return CWrong
+                  Left e -> putStrLn ("Error parsing command " ++ show e) >> return CWrong
                   Right cl -> return $ (toCmd . concat) cl

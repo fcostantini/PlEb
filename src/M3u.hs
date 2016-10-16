@@ -30,7 +30,7 @@ path = do p <- many (noneOf "\n\r") --we parse anything
 
 line :: Parser (Maybe M3uLine)
 line = do skipMany space
-          choice [try (header >>= return . Just), try (info >>= return . Just), try (comment >> return Nothing), (path >>= return . Just)]
+          choice [try (fmap Just header), try (fmap Just info), try (comment >> return Nothing), fmap Just path]
 
 file :: Parser M3uFile
 file = do lines <- sepBy line endOfLine
@@ -44,7 +44,7 @@ readM3u f = let parsed = parse file "" f
                  Right m3u -> return m3u
 
 m3uToSong :: M3uFile -> [Song]
-m3uToSong f = filter (not . null) $ (map lineToSong f)
+m3uToSong f = filter (not . null) $ map lineToSong f
 
 lineToSong :: M3uLine -> Song
 lineToSong Header = []
@@ -52,16 +52,16 @@ lineToSong (Info i) = []
 lineToSong (Path f) = f
 
 parseM3u :: String -> IO [Song]
-parseM3u f = readM3u f >>= (return . m3uToSong)
+parseM3u f = fmap m3uToSong (readM3u f)
 
 m3uPrelude ::  String
 m3uPrelude = "#EXTM3U\n"
 
 writeSongM3u :: F.FilePath -> Song -> IO ()
-writeSongM3u file song = let entry = "#EXTINFO\n"++song++"\n"
+writeSongM3u file song = let entry = "#EXTINFO\n" ++ song ++ "\n"
                          in appendFile file entry
 
 writeM3u :: Playlist -> IO ()
 writeM3u pl = let file = getPath pl
               in do writeFile file m3uPrelude
-                    mapM_ (\a -> writeSongM3u file a) $ getSongs pl
+                    mapM_ (writeSongM3u file) $ getSongs pl

@@ -20,12 +20,12 @@ import Report
 
 getPlaylist :: F.FilePath -> IO Playlist
 getPlaylist file = let ext = getExt file
-                   in if ext == Other then putStrLn ("Unsupported format.") >> exitSuccess
+                   in if ext == Other then putStrLn "Unsupported format." >> exitSuccess
                       else do tcont <- tryJust handleRead (STR.readFile file)
                               case tcont of
                                 Left e -> putStrLn e >> exitSuccess
                                 Right cont -> do songs <- parse ext cont
-                                                 return $ (Pl file songs)
+                                                 return $ Pl file songs
 
 addSong :: Playlist -> F.FilePath -> IO Playlist
 addSong pl s = do (newpl, r) <- runStateT (addSong' pl s) iReport
@@ -56,41 +56,38 @@ addDir d pl = do exists <- doesDirectoryExist d
 
 checkSong :: Song -> RState ()
 checkSong s = do b <- lift $ doesFileExist s
-                 case b of
-                    True -> lift (putStrLn ("Ok " ++ F.takeBaseName s)) >> good
-                    False -> badError (s ++ " does NOT exist in the file system.\n")
+                 if b then lift (putStrLn ("Ok " ++ F.takeBaseName s)) >> good
+                 else badError (s ++ " does NOT exist in the file system.\n")
 
-check :: Playlist -> IO Playlist
+check :: Playlist -> IO ()
 check pl = do r <- execStateT (mapM_ checkSong (getSongs pl)) iReport
               putStrLn $ ppReport r
-              return pl
 
-combinePl :: Playlist -> String -> IO Playlist
+combinePl :: Playlist -> String -> IO ()
 combinePl pl comb = do pl' <- getPlaylist comb
-                       if (null $ getSongs pl') then (putStrLn "\ncombine error: trying to combine with an empty playlist.\n") >> return pl
+                       if null $ getSongs pl' then putStrLn "\ncombine error: trying to combine with an empty playlist.\n"
                        else let songs = getSongs pl
                                 songs' = getSongs pl'
                                 path = getPath pl
                                 ext = getExt path
-                                newpath = replaceBaseName path ((takeBaseName path) ++ (takeBaseName comb))
+                                newpath = replaceBaseName path (takeBaseName path ++ takeBaseName comb)
                                 newsongs = songs ++ songs'
-                                newpl = (Pl newpath newsongs)
+                                newpl = Pl newpath newsongs
                             in do write ext newpl
-                                  putStrLn ("\nDone! Playlists combined in " ++ (takeFileName newpath) ++ "\n")
-                                  return newpl
+                                  putStrLn ("\nDone! Playlists combined in " ++ takeFileName newpath ++ ". Load that file if you want to modify it.\n")
 
-convert :: Playlist -> String -> IO Playlist
-convert pl fmat = if (length fmat) > 5 then putStrLn "\nconvert error: wrong format.\n" >> return pl else --this check is stupid, improve it later
+convert :: Playlist -> String -> IO ()
+convert pl fmat = if length fmat > 5 then putStrLn "\nconvert error: wrong format.\n" else
                   let plf = tail $ F.takeExtension (getPath pl)
                       lfmat = map toLower fmat
-                  in if plf == lfmat then putStrLn "\nconvert error: the playlist is already in this format.\n" >> return pl
+                  in if plf == lfmat then putStrLn "\nconvert error: the playlist is already in this format.\n"
                      else let ext = getExt ("." ++ lfmat)
                           in case ext of
-                               Other -> putStrLn "\nconvert error: format not supported\n" >> return pl
+                               Other -> putStrLn "\nconvert error: format not supported\n"
                                _     -> let newfp = F.replaceExtension (getPath pl) lfmat
-                                            auxPl = (Pl newfp (getSongs pl))
+                                            auxPl = Pl newfp (getSongs pl)
                                         in write ext auxPl >>
-                                           putStrLn ("\nConversion complete! Load the new file ("++(takeFileName newfp)++") if you want to edit it.\n") >> return pl
+                                           putStrLn ("\nConversion complete! Load the new file (" ++ takeFileName newfp ++ ") if you want to modify it.\n")
 
 exportSong :: String -> Song -> RState ()
 exportSong name fp = do exists <- lift $ doesFileExist fp
@@ -101,24 +98,23 @@ exportSong name fp = do exists <- lift $ doesFileExist fp
                                 good
                                 where song = takeFileName fp
 
-export :: Playlist -> IO Playlist
+export :: Playlist -> IO ()
 export pl = do let pname = F.takeBaseName (getPath pl)
                createDirectoryIfMissing False pname
-               r <- execStateT (mapM_ (\a -> exportSong pname a) (getSongs pl)) iReport
+               r <- execStateT (mapM_ (exportSong pname) (getSongs pl)) iReport
                putStrLn $ ppReport r
-               return pl
 
-plPrint :: Playlist -> IO Playlist
+plPrint :: Playlist -> IO ()
 plPrint pl = let pname = F.takeBaseName (getPath pl)
              in putStrLn ("\nPlaylist: " ++ pname ++ "\n") >>
-                mapM_ putStrLn (getSongs pl) >> putStrLn "" >> return pl
+                mapM_ putStrLn (getSongs pl) >> putStrLn ""
 
 rmvSong :: Playlist -> F.FilePath -> IO Playlist
-rmvSong pl s = case elem s (getSongs pl) of
-                 False -> putStrLn ("remove error: " ++ s ++ "is not in the playlist.\n") >> return pl
-                 _ -> do putStr ("\nRemoving " ++ s ++ " from playlist... ")
-                         let newpl = rmS pl s
-                         let ext = getExt (getPath pl)
-                         write ext newpl
-                         putStrLn "done!\n"
-                         return newpl
+rmvSong pl s = if s `elem` getSongs pl then
+                  do putStr ("\nRemoving " ++ s ++ " from playlist... ")
+                     let newpl = rmS pl s
+                     let ext = getExt (getPath pl)
+                     write ext newpl
+                     putStrLn "done!\n"
+                     return newpl
+               else putStrLn ("remove error: " ++ s ++ "is not in the playlist.\n") >> return pl

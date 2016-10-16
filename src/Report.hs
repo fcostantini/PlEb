@@ -2,9 +2,9 @@ module Report where
 
 import Control.Monad.Trans.State
 
-data Report = Rep { ebuffer :: String,
-                    goodCount :: Int,
-                    badCount :: Int } deriving Show
+data Report = Rep {ebuffer :: String,
+                   goodCount :: Int,
+                   badCount :: Int } deriving Show
 
 iReport :: Report
 iReport = Rep [] 0 0

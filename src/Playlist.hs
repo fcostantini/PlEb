@@ -4,12 +4,14 @@ import Data.List
 import System.FilePath as F
 
 type Song = F.FilePath
+
 data Ext = M3u | Pls | Wpl | Xspf | Other deriving Eq
+
 data Playlist = Pl {getPath :: F.FilePath,
                     getSongs :: [Song]} deriving Show
 
 addS :: Playlist -> Song -> Playlist
-addS pl s = pl {getSongs = (getSongs pl) ++ [s]}
+addS pl s = pl {getSongs = getSongs pl ++ [s]}
 
 --removes all occurrences of the song
 rmS :: Playlist -> Song -> Playlist

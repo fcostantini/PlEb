@@ -56,9 +56,9 @@ version = do string "Version="
 
 line :: Parser (Maybe PlsLine)
 line = do skipMany space
-          choice $ [try (header >>= return . Just), try (path >>= return . Just), try (title >>= return . Just)] ++
-                   [try (version >>= return . Just), try (len >>= return . Just), try (entries >>= return . Just)] ++
-                   [(comment >> return Nothing)]
+          choice $ [try (fmap Just header), try (fmap Just path), try (fmap Just title)] ++
+                   [try (fmap Just version), try (fmap Just len), try (fmap Just entries)] ++
+                   [comment >> return Nothing]
 
 file :: Parser PlsFile
 file = do lines <- sepBy line endOfLine
@@ -72,24 +72,24 @@ readPls f = let parsed = parse file "" f
                  Right pls -> return pls
 
 plsToSong :: PlsFile -> [Song]
-plsToSong f = filter (not . null) $ (map lineToSong f)
+plsToSong f = filter (not . null) $ map lineToSong f
 
 lineToSong :: PlsLine -> Song
 lineToSong (File f) = f
 lineToSong _ = []
 
 parsePls :: String -> IO [Song]
-parsePls f = readPls f >>= (return . plsToSong)
+parsePls f = fmap plsToSong (readPls f)
 
 plsPrelude ::  String
 plsPrelude = "[playlist]\n"
 
 plsEpilogue :: Int -> String
-plsEpilogue n = "\nNumberOfEntries="++(show n)++"\nVersion=2"
+plsEpilogue n = "\nNumberOfEntries=" ++ show n ++ "\nVersion=2"
 
 writeSongsPls :: F.FilePath -> [Song] -> Int -> IO ()
 writeSongsPls _ [] _ = return ()
-writeSongsPls file (x:xs) n = let entry = "\nFile"++(show n)++"="++x++"\n"
+writeSongsPls file (x:xs) n = let entry = "\nFile" ++ show n ++ "=" ++ x ++ "\n"
                               in do appendFile file entry
                                     writeSongsPls file xs (n+1)
 

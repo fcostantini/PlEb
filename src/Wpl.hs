@@ -38,5 +38,5 @@ writeWpl :: Playlist -> IO ()
 writeWpl pl = let file = getPath pl
                   title = F.takeBaseName file
               in do writeFile file $ wplPrelude title
-                    mapM_ (\a -> writeSongWpl file a) $ getSongs pl
+                    mapM_ (writeSongWpl file) $ getSongs pl
                     appendFile file wplEpilogue

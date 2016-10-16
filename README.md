@@ -43,6 +43,8 @@ Commands can be chained using '>'. For example, we can do the following:
 
     print>add song.mp3>print>quit
 
+If a chained command has an error, execution will continue regardless.
+
 **Notes:**  
 
  - add, add_dir and rmv actually modify the file, you may want to do a backup before.  
