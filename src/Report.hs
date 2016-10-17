@@ -2,6 +2,7 @@ module Report where
 
 import Control.Monad.Trans.State
 
+--Report to keep a status of operations
 data Report = Rep {ebuffer :: String,
                    goodCount :: Int,
                    badCount :: Int } deriving Show

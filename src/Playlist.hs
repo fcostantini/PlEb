@@ -7,13 +7,13 @@ type Song = F.FilePath
 
 data Ext = M3u | Pls | Wpl | Xspf | Other deriving Eq
 
+--A playlist is basically its location and a list of its songs
 data Playlist = Pl {getPath :: F.FilePath,
                     getSongs :: [Song]} deriving Show
 
 addS :: Playlist -> Song -> Playlist
 addS pl s = pl {getSongs = getSongs pl ++ [s]}
 
---removes all occurrences of the song
 rmS :: Playlist -> Song -> Playlist
 rmS pl s = pl {getSongs = filter (/=s) (getSongs pl)}
 

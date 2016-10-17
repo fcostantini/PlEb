@@ -10,6 +10,7 @@ import Text.XML.Light
 
 import Playlist
 
+--URI stuff is needed because xspf uses URI for portability
 uriP = "file:///"
 uriC = length uriP
 

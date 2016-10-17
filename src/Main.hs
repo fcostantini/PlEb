@@ -19,6 +19,7 @@ import Parsing
 import Playlist
 import Report
 
+--Load a playlist; if given commands execute them
 loadExec :: Bool -> F.FilePath -> Maybe String -> IO Playlist
 loadExec b file c = do playlist <- getPlaylist file
                        when (null $ getSongs playlist) (putStrLn warning)
@@ -27,9 +28,11 @@ loadExec b file c = do playlist <- getPlaylist file
                          Just cmds -> do cmd <- parseComd cmds
                                          runCmd cmd playlist
 
+--Load a playlist interactively
 load :: Bool -> F.FilePath -> IO Playlist
 load b file = loadExec b file Nothing
 
+--Loop for interactive usage
 menu :: Bool -> Playlist -> IO Playlist
 menu b pl = do home <- getHomeDirectory --history file will be located here
                runInputT (mySettings home) loop >>= menu False
@@ -42,6 +45,7 @@ menu b pl = do home <- getHomeDirectory --history file will be located here
                                 Just c -> do cmd <- liftIO $ parseComd (c++"\n")
                                              liftIO $ runCmd cmd pl
 
+--Run a command in the given playlist
 runCmd :: Cmd -> Playlist -> IO Playlist
 runCmd (Add s) pl = case trim s of
                       "" -> putStrLn "\nadd error: please write the path of the song.\n" >> return pl
@@ -66,9 +70,10 @@ runCmd Print pl = plPrint pl >> return pl
 runCmd (Rmv s) pl = case trim s of
                       "" -> putStrLn "\nrmv error: please write the path of the song.\n" >> return pl
                       _  -> rmvSong pl s
-runCmd (Seq c1 c2) pl = runCmd c1 pl >>= runCmd c2 --should it stop on error?
+runCmd (Seq c1 c2) pl = runCmd c1 pl >>= runCmd c2 --should it stop when first command gives some error?
 runCmd CWrong pl = putStrLn "\nWrong command.\n" >> return pl
 
+--Run the program, if help or version flags are active it will show those and end
 runPleb :: [Flag] -> F.FilePath -> IO Playlist
 runPleb [] p = load True p
 runPleb fs p = do when (FHelp `elem` fs) (putStrLn (usageInfo header options) >> exitSuccess)

@@ -16,8 +16,9 @@ import Misc
 import Playlist
 import Report
 
---should paths be absolute?
+--Should paths be absolute?
 
+--Parses a playlist and returns its information
 getPlaylist :: F.FilePath -> IO Playlist
 getPlaylist file = let ext = getExt file
                    in if ext == Other then putStrLn "Unsupported format." >> exitSuccess
@@ -27,11 +28,13 @@ getPlaylist file = let ext = getExt file
                                 Right cont -> do songs <- parse ext cont
                                                  return $ Pl file songs
 
+--Adds a song to the playlist
 addSong :: Playlist -> F.FilePath -> IO Playlist
 addSong pl s = do (newpl, r) <- runStateT (addSong' pl s) iReport
                   putStrLn $ ppReport r
                   return newpl
 
+--Adds a song to the playlist, keeping a report of success  (does not check if it has a "song extension")
 addSong' :: Playlist -> F.FilePath -> RState Playlist
 addSong' pl s = do exists <- lift $ doesFileExist s
                    if not exists then
@@ -43,6 +46,7 @@ addSong' pl s = do exists <- lift $ doesFileExist s
                            lift $ putStrLn "done!\n"
                            good >> return newpl
 
+--Adds the content of a directory to the playlist
 addDir :: F.FilePath -> Playlist -> IO Playlist
 addDir d pl = do exists <- doesDirectoryExist d
                  if not exists then
@@ -54,15 +58,18 @@ addDir d pl = do exists <- doesDirectoryExist d
                          putStrLn $ ppReport r
                          return newpl
 
+--Checks if a song in the playlist exists in the file system, keeping a report
 checkSong :: Song -> RState ()
 checkSong s = do b <- lift $ doesFileExist s
                  if b then lift (putStrLn ("Ok " ++ F.takeBaseName s)) >> good
                  else badError (s ++ " does NOT exist in the file system.\n")
 
+--Checks if the contents of the playlist exist
 check :: Playlist -> IO ()
 check pl = do r <- execStateT (mapM_ checkSong (getSongs pl)) iReport
               putStrLn $ ppReport r
 
+--Combines two playlists in a new file
 combinePl :: Playlist -> String -> IO ()
 combinePl pl comb = do pl' <- getPlaylist comb
                        if null $ getSongs pl' then putStrLn "\ncombine error: trying to combine with an empty playlist.\n"
@@ -76,6 +83,7 @@ combinePl pl comb = do pl' <- getPlaylist comb
                             in do write ext newpl
                                   putStrLn ("\nDone! Playlists combined in " ++ takeFileName newpath ++ ". Load that file if you want to modify it.\n")
 
+--Creates a copy of the given playlist with another format
 convert :: Playlist -> String -> IO ()
 convert pl fmat = if length fmat > 5 then putStrLn "\nconvert error: wrong format.\n" else
                   let plf = tail $ F.takeExtension (getPath pl)
@@ -89,6 +97,7 @@ convert pl fmat = if length fmat > 5 then putStrLn "\nconvert error: wrong forma
                                         in write ext auxPl >>
                                            putStrLn ("\nConversion complete! Load the new file (" ++ takeFileName newfp ++ ") if you want to modify it.\n")
 
+--Exports a song, keeping a success report
 exportSong :: String -> Song -> RState ()
 exportSong name fp = do exists <- lift $ doesFileExist fp
                         if not exists then
@@ -98,17 +107,20 @@ exportSong name fp = do exists <- lift $ doesFileExist fp
                                 good
                                 where song = takeFileName fp
 
+--Exports a playlist
 export :: Playlist -> IO ()
 export pl = do let pname = F.takeBaseName (getPath pl)
                createDirectoryIfMissing False pname
                r <- execStateT (mapM_ (exportSong pname) (getSongs pl)) iReport
                putStrLn $ ppReport r
 
+--Prints the contents of a playlist
 plPrint :: Playlist -> IO ()
 plPrint pl = let pname = F.takeBaseName (getPath pl)
              in putStrLn ("\nPlaylist: " ++ pname ++ "\n") >>
                 mapM_ putStrLn (getSongs pl) >> putStrLn ""
 
+--Removes all ocurrencies of a song from a playlist
 rmvSong :: Playlist -> F.FilePath -> IO Playlist
 rmvSong pl s = if s `elem` getSongs pl then
                   do putStr ("\nRemoving " ++ s ++ " from playlist... ")

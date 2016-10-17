@@ -11,7 +11,7 @@ import Pls
 import Wpl
 import Xspf
 
-mhelp, vers :: String
+mhelp, vers, warning :: String
 
 mhelp = "\nadd song_path: adds song to the playlist (if it exists).\n"++
         "add_dir dir: adds directory to the playlist (if it exists).\n" ++
@@ -38,9 +38,11 @@ handleRead e | isDoesNotExistError e = Just "Error reading: file doesn't exist."
 
 commandList = ["add", "add_dir", "check", "combine", "convert", "exit", "export", "load", "print", "quit", "rmv"]
 
+--This function can be used to autocomplete commands instead of filepaths
 searchFunc :: String -> [Completion]
 searchFunc str = map simpleCompletion $ filter (str `isPrefixOf`) commandList
 
+--Settings for Haskeline
 mySettings :: FilePath -> Settings IO
 mySettings fp = Settings { historyFile = Just (fp++"/.PlEb_history"),
                            complete = completeFilename, --completeWord Nothing " \t" $ return . searchFunc, 
@@ -49,6 +51,7 @@ mySettings fp = Settings { historyFile = Just (fp++"/.PlEb_history"),
 trim :: String -> String
 trim = filter (/= ' ')
 
+--Playlist parser
 parse :: Ext -> String -> IO [Song]
 parse M3u = parseM3u
 parse Pls = parsePls
@@ -56,6 +59,7 @@ parse Wpl = parseWpl
 parse Xspf = parseXspf
 parse _ = \_ -> return []
 
+--Playlist writer
 write :: Ext -> Playlist -> IO ()
 write M3u = writeM3u
 write Pls = writePls
