@@ -6,6 +6,8 @@ import System.IO.Error
 import Text.Parsec.Char
 import Text.ParserCombinators.Parsec
 
+import qualified Misc as M
+
 data Flag = FHelp | Version | Cmds F.FilePath deriving (Eq, Show)
 
 options :: [OptDescr Flag]
@@ -49,12 +51,12 @@ stuff1 = many1 (noneOf ">\n\r")
 addP :: Parser Cmd
 addP = do string "add "
           f <- stuff
-          return $ Add f
+          return $ Add (M.rstrip f)
 
 addD :: Parser Cmd
 addD = do string "add_dir "
           f <- stuff
-          return $ AddD f
+          return $ AddD (M.rstrip f)
 
 checkP :: Parser Cmd
 checkP = do string "check"
@@ -63,12 +65,12 @@ checkP = do string "check"
 comb :: Parser Cmd
 comb = do string "combine "
           f <- stuff
-          return $ Comb f
+          return $ Comb (M.rstrip f)
 
 conv :: Parser Cmd
 conv = do string "convert"
           f <- stuff
-          return $ Conv f
+          return $ Conv (M.rstrip f)
 
 exitP :: Parser Cmd
 exitP = (do string "exit"
@@ -87,7 +89,7 @@ helpP = do string "help"
 loadP :: Parser Cmd
 loadP = do string "load "
            f <- stuff
-           return $ Load f
+           return $ Load (M.rstrip f)
 
 printP :: Parser Cmd
 printP = do string "print"
@@ -96,7 +98,7 @@ printP = do string "print"
 rmvP :: Parser Cmd
 rmvP = do string "rmv "
           f <- stuff
-          return $ Rmv f
+          return $ Rmv (M.rstrip f)
 
 wrongP :: Parser Cmd
 wrongP = stuff >> return CWrong 

@@ -19,14 +19,17 @@ import Report
 --Should paths be absolute?
 
 --Parses a playlist and returns its information
-getPlaylist :: F.FilePath -> IO Playlist
-getPlaylist file = let ext = getExt file
-                   in if ext == Other then putStrLn "Unsupported format." >> exitSuccess
-                      else do tcont <- tryJust handleRead (STR.readFile file)
-                              case tcont of
-                                Left e -> putStrLn e >> exitSuccess
-                                Right cont -> do songs <- parse ext cont
-                                                 return $ Pl file songs
+getPlaylist :: F.FilePath -> Maybe Playlist -> IO Playlist
+getPlaylist file pl = let ext = getExt file
+                        in if ext == Other then do putStrLn "load error: unsupported format."
+                                                   case pl of
+                                                     Nothing -> exitSuccess
+                                                     Just p  -> return p
+                           else do tcont <- tryJust handleRead (STR.readFile $ rstrip file)
+                                   case tcont of
+                                     Left e -> putStrLn e >> exitSuccess
+                                     Right cont -> do songs <- parse ext cont
+                                                      return $ Pl file songs
 
 --Adds a song to the playlist
 addSong :: Playlist -> F.FilePath -> IO Playlist
@@ -71,7 +74,8 @@ check pl = do r <- execStateT (mapM_ checkSong (getSongs pl)) iReport
 
 --Combines two playlists in a new file
 combinePl :: Playlist -> String -> IO ()
-combinePl pl comb = do pl' <- getPlaylist comb
+combinePl pl comb = do pl' <- getPlaylist comb (Just pl)
+                       when (pl == pl') (return ())
                        if null $ getSongs pl' then putStrLn "\ncombine error: trying to combine with an empty playlist.\n"
                        else let songs = getSongs pl
                                 songs' = getSongs pl'

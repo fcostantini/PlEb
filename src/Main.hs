@@ -20,17 +20,21 @@ import Playlist
 import Report
 
 --Load a playlist; if given commands execute them
-loadExec :: Bool -> F.FilePath -> Maybe String -> IO Playlist
-loadExec b file c = do playlist <- getPlaylist file
-                       when (null $ getSongs playlist) (putStrLn warning)
-                       case c of
-                         Nothing -> menu b playlist
-                         Just cmds -> do cmd <- parseComd cmds
-                                         runCmd cmd playlist
+loadExec :: F.FilePath -> Maybe String -> Maybe Playlist -> IO Playlist
+loadExec file c pl = do playlist <- getPlaylist file pl
+                        case c of
+                          Nothing -> case pl of
+                                        Nothing -> menu True playlist
+                                        _       -> menu False playlist
+                          Just cmds -> do cmd <- parseComd cmds
+                                          runCmd cmd playlist
 
 --Load a playlist interactively
-load :: Bool -> F.FilePath -> IO Playlist
-load b file = loadExec b file Nothing
+load :: F.FilePath -> Playlist -> IO Playlist
+load file pl = loadExec file Nothing (Just pl)
+
+firstLoad :: F.FilePath -> Maybe String -> IO Playlist
+firstLoad file c = loadExec file c Nothing
 
 --Loop for interactive usage
 menu :: Bool -> Playlist -> IO Playlist
@@ -65,7 +69,7 @@ runCmd Export pl = putStrLn "\nExporting playlist...\n" >> export pl >> return p
 runCmd HelpC pl = putStrLn mhelp >> return pl
 runCmd (Load p) pl = case trim p of
                        "" -> putStrLn "\nload error: please specify the playlist to load.\n" >> return pl
-                       _  -> load True p
+                       _  -> load p pl
 runCmd Print pl = plPrint pl >> return pl
 runCmd (Rmv s) pl = case trim s of
                       "" -> putStrLn "\nrmv error: please write the path of the song.\n" >> return pl
@@ -75,16 +79,16 @@ runCmd CWrong pl = putStrLn "\nWrong command.\n" >> return pl
 
 --Run the program, if help or version flags are active it will show those and end
 runPleb :: [Flag] -> F.FilePath -> IO Playlist
-runPleb [] p = load True p
+runPleb [] p = firstLoad p Nothing
 runPleb fs p = do when (FHelp `elem` fs) (putStrLn (usageInfo header options) >> exitSuccess)
                   when (Version `elem` fs) (putStrLn vers >> exitSuccess)
                   let cfs = filter isCmds fs
                   case cfs of
-                    [] -> load True p
+                    [] -> firstLoad p Nothing
                     [Cmds f] -> do tcont <- tryJust handleRead (readFile f)
                                    case tcont of
                                      Left e -> putStrLn e >> exitSuccess
-                                     Right cmds -> loadExec True p (Just cmds)
+                                     Right cmds -> firstLoad p (Just cmds)
                     _ -> putStrLn "Incorrect use of commands flag.\n" >> exitSuccess
                where isCmds (Cmds _) = True
                      isCmds _ = False

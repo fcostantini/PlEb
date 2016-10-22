@@ -1,17 +1,17 @@
 module Misc where
 
 import Data.List
+import qualified Data.Text as T
 import System.Console.Haskeline
 import System.IO.Error
 
 import M3u
-import Parsing
 import Playlist
 import Pls
 import Wpl
 import Xspf
 
-mhelp, vers, warning :: String
+mhelp, vers :: String
 
 mhelp = "\nadd song_path: adds song to the playlist (if it exists).\n"++
         "add_dir dir: adds directory to the playlist (if it exists).\n" ++
@@ -25,10 +25,6 @@ mhelp = "\nadd song_path: adds song to the playlist (if it exists).\n"++
         "rmv song_path: removes song from the playlist (if it exists).\n"
 
 vers = "PlEb 1.3.1"
-
-warning = "\n---------------------------------------------------------------------------------\n"++
-          "WARNING: found no songs in playlist (this is okay if you are using an empty one).\n"++
-          "---------------------------------------------------------------------------------\n"
 
 handleRead :: IOError -> Maybe String
 handleRead e | isDoesNotExistError e = Just "Error reading: file doesn't exist."
@@ -50,6 +46,9 @@ mySettings fp = Settings { historyFile = Just (fp++"/.PlEb_history"),
 
 trim :: String -> String
 trim = filter (/= ' ')
+
+rstrip :: String -> String
+rstrip = T.unpack . T.stripEnd . T.pack
 
 --Playlist parser
 parse :: Ext -> String -> IO [Song]
