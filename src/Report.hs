@@ -2,6 +2,8 @@ module Report where
 
 import Control.Monad.Trans.State
 
+import Playlist
+
 --Report to keep a status of operations
 data Report = Rep {ebuffer :: String,
                    goodCount :: Int,
@@ -10,7 +12,8 @@ data Report = Rep {ebuffer :: String,
 iReport :: Report
 iReport = Rep [] 0 0
 
-type RState a = StateT Report IO a
+--Wrap around the current playlist state
+type RState = StateT Report PlState
 
 addError :: String -> RState ()
 addError e = do r <- get

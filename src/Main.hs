@@ -3,6 +3,7 @@ module Main where
 import Control.Exception
 import Control.Monad
 import Control.Monad.IO.Class
+import Control.Monad.Trans.Class
 import Control.Monad.Trans.State
 import Data.List
 import System.Console.GetOpt
@@ -20,24 +21,17 @@ import Playlist
 import Report
 
 --Load a playlist; if given commands execute them
-loadExec :: F.FilePath -> Maybe String -> Maybe Playlist -> IO Playlist
-loadExec file c pl = do playlist <- getPlaylist file pl
-                        case c of
-                          Nothing -> case pl of
-                                        Nothing -> menu True playlist
-                                        _       -> menu False playlist
-                          Just cmds -> do cmd <- parseComd cmds
-                                          runCmd cmd playlist
-
---Load a playlist interactively
-load :: F.FilePath -> Playlist -> IO Playlist
-load file pl = loadExec file Nothing (Just pl)
-
-firstLoad :: F.FilePath -> Maybe String -> IO Playlist
-firstLoad file c = loadExec file c Nothing
+loadExec :: F.FilePath -> Maybe String -> IO ()
+loadExec file c = do mpl <- getPlaylist file
+                     case mpl of 
+                        Nothing -> exitSuccess
+                        Just pl -> case c of
+                                     Nothing ->  menu True pl
+                                     Just cmds -> do cmd <- parseComd cmds
+                                                     evalStateT (runCmd cmd) pl
 
 --Loop for interactive usage
-menu :: Bool -> Playlist -> IO Playlist
+menu :: Bool -> Playlist -> IO ()
 menu b pl = do home <- getHomeDirectory --history file will be located here
                runInputT (mySettings home) loop >>= menu False
             where loop :: InputT IO Playlist
@@ -47,48 +41,50 @@ menu b pl = do home <- getHomeDirectory --history file will be located here
                             case input of
                                 Nothing -> return pl
                                 Just c -> do cmd <- liftIO $ parseComd (c++"\n")
-                                             liftIO $ runCmd cmd pl
+                                             liftIO $ execStateT (runCmd cmd) pl
 
---Run a command in the given playlist
-runCmd :: Cmd -> Playlist -> IO Playlist
-runCmd (Add s) pl = case trim s of
-                      "" -> putStrLn "\nadd error: please write the path of the song.\n" >> return pl
-                      _  -> addSong pl s
-runCmd (AddD d) pl = case trim d of
-                       "" -> putStrLn "\nadd_dir error: please write the path of the directory.\n" >> return pl
-                       _  -> addDir d pl
-runCmd Check pl = putStrLn "\nChecking playlist...\n" >> check pl >> return pl
-runCmd (Comb p) pl = case trim p of
-                       "" -> putStrLn "\ncombine error: please specify the playlist you want to combine with.\n" >> return pl
-                       _  -> combinePl pl p >> return pl
-runCmd (Conv f) pl = case trim f of
-                       "" -> putStrLn "\nconvert error: please specify the format you want to convert to.\n" >> return pl
-                       _  -> convert pl f >> return pl
-runCmd Exit pl = putStrLn "\nGoodbye!\n" >> exitSuccess
-runCmd Export pl = putStrLn "\nExporting playlist...\n" >> export pl >> return pl
-runCmd HelpC pl = putStrLn mhelp >> return pl
-runCmd (Load p) pl = case trim p of
-                       "" -> putStrLn "\nload error: please specify the playlist to load.\n" >> return pl
-                       _  -> load p pl
-runCmd Print pl = plPrint pl >> return pl
-runCmd (Rmv s) pl = case trim s of
-                      "" -> putStrLn "\nrmv error: please write the path of the song.\n" >> return pl
-                      _  -> rmvSong pl s
-runCmd (Seq c1 c2) pl = runCmd c1 pl >>= runCmd c2 --should it stop when first command gives some error?
-runCmd CWrong pl = putStrLn "\nWrong command.\n" >> return pl
+--Run a command in the current playlist
+runCmd :: Cmd -> PlState ()
+runCmd (Add s) = case trim s of
+                      "" -> lift $ putStrLn "\nadd error: please write the path of the song.\n"
+                      _  -> addSong s
+runCmd (AddD d) = case trim d of
+                       "" -> lift $ putStrLn "\nadd_dir error: please write the path of the directory.\n"
+                       _  -> addDir d
+runCmd Check = lift (putStrLn "\nChecking playlist...\n") >> check
+runCmd (Comb p) = case trim p of
+                       "" -> lift $ putStrLn "\ncombine error: please specify the playlist you want to combine with.\n"
+                       _  -> combinePl p
+runCmd (Conv f) = case trim f of
+                       "" -> lift $ putStrLn "\nconvert error: please specify the format you want to convert to.\n"
+                       _  -> convert f
+runCmd Exit = do lift $ putStrLn "\nGoodbye!\n"
+                 lift $ exitSuccess
+runCmd Export = do lift $ putStrLn "\nExporting playlist...\n"
+                   export
+runCmd HelpC = lift $ putStrLn mhelp
+runCmd (Load p) = case trim p of
+                       "" -> lift $ putStrLn "\nload error: please specify the playlist to load.\n"
+                       _  -> loadPl p
+runCmd Print = plPrint
+runCmd (Rmv s) = case trim s of
+                      "" -> lift $ putStrLn "\nrmv error: please write the path of the song.\n"
+                      _  -> rmvSong s
+runCmd (Seq c1 c2) = runCmd c1 >> runCmd c2 --should it stop when first command gives some error?
+runCmd CWrong = lift $ putStrLn "\nWrong command.\n"
 
 --Run the program, if help or version flags are active it will show those and end
-runPleb :: [Flag] -> F.FilePath -> IO Playlist
-runPleb [] p = firstLoad p Nothing
+runPleb :: [Flag] -> F.FilePath -> IO ()
+runPleb [] p = loadExec p Nothing
 runPleb fs p = do when (FHelp `elem` fs) (putStrLn (usageInfo header options) >> exitSuccess)
                   when (Version `elem` fs) (putStrLn vers >> exitSuccess)
                   let cfs = filter isCmds fs
                   case cfs of
-                    [] -> firstLoad p Nothing
+                    [] -> loadExec p Nothing
                     [Cmds f] -> do tcont <- tryJust handleRead (readFile f)
                                    case tcont of
                                      Left e -> putStrLn e >> exitSuccess
-                                     Right cmds -> firstLoad p (Just cmds)
+                                     Right cmds -> loadExec p (Just cmds)
                     _ -> putStrLn "Incorrect use of commands flag.\n" >> exitSuccess
                where isCmds (Cmds _) = True
                      isCmds _ = False

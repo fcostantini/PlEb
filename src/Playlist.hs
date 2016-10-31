@@ -1,5 +1,6 @@
 module Playlist where
 
+import Control.Monad.Trans.State
 import Data.List
 import System.FilePath as F
 
@@ -11,11 +12,18 @@ data Ext = M3u | Pls | Wpl | Xspf | Other deriving Eq
 data Playlist = Pl {getPath :: F.FilePath,
                     getSongs :: [Song]} deriving (Eq, Show)
 
-addS :: Playlist -> Song -> Playlist
-addS pl s = pl {getSongs = getSongs pl ++ [s]}
+--Current playlist will be the state
+type PlState = StateT Playlist IO
 
-rmS :: Playlist -> Song -> Playlist
-rmS pl s = pl {getSongs = filter (/=s) (getSongs pl)}
+addS :: Song -> PlState ()
+addS s = do pl <- get
+            let songs = getSongs pl
+            put $ pl {getSongs = songs ++ [s]}
+
+rmS :: Song -> PlState ()
+rmS s = do pl <- get
+           let songs = getSongs pl
+           put $ pl {getSongs = filter (/=s) songs}
 
 getExt :: F.FilePath -> Ext
 getExt fp = case filter (/= ' ') (F.takeExtension fp) of
