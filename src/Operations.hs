@@ -40,11 +40,10 @@ addSong' s = do exists <- lift . lift $ doesFileExist s
                 if not exists then
                   badError ("add error: file " ++ s ++ " does not exist.\n")
                 else do lift . lift $ putStr ("\nAdding " ++ s ++ " to playlist... ")
-                        pl <- lift $ get
-                        newpl <- lift . lift $ execStateT (addS s) pl
+                        lift (addS s)
+                        pl <- lift get
                         let ext = getExt (getPath pl)
-                        lift . lift $ write ext newpl
-                        lift $ put newpl
+                        lift . lift $ write ext pl
                         lift . lift $ putStrLn "done!\n"
                         good
 
@@ -78,7 +77,7 @@ combinePl :: String -> PlState ()
 combinePl comb = do pl <- get
                     mpl' <- lift $ getPlaylist comb
                     case mpl' of
-                      Nothing -> lift $ putStrLn ("combine error: failed to read the second playlist.\n")
+                      Nothing -> lift $ putStrLn "combine error: failed to read the second playlist.\n"
                       Just pl'-> if null $ getSongs pl' then lift $ putStrLn "\ncombine error: trying to combine with an empty playlist.\n"
                                  else let songs = getSongs pl
                                           songs' = getSongs pl'
@@ -126,7 +125,7 @@ loadPl :: F.FilePath -> PlState ()
 loadPl file = do mpl <- lift $ getPlaylist file
                  case mpl of 
                    Nothing -> return ()
-                   Just pl -> do lift $ putStrLn ("\nPlaylist " ++ (takeFileName (getPath pl)) ++ "loaded!\n")
+                   Just pl -> do lift $ putStrLn ("\nPlaylist " ++ takeFileName (getPath pl) ++ "loaded!\n")
                                  put pl
 
 --Prints the contents of a playlist
@@ -142,8 +141,9 @@ rmvSong :: F.FilePath -> PlState ()
 rmvSong s = do pl <- get
                if s `elem` getSongs pl then
                  do lift $ putStr ("\nRemoving " ++ s ++ " from playlist... ")
-                    newpl <- lift $ execStateT (rmS s) pl
+                    rmS s
+                    pl <- get
                     let ext = getExt (getPath pl)
-                    lift $ write ext newpl
+                    lift $ write ext pl
                     lift $ putStrLn "done!\n"
                else lift $ putStrLn ("remove error: " ++ s ++ "is not in the playlist.\n")

@@ -59,7 +59,7 @@ runCmd (Conv f) = case trim f of
                        "" -> lift $ putStrLn "\nconvert error: please specify the format you want to convert to.\n"
                        _  -> convert f
 runCmd Exit = do lift $ putStrLn "\nGoodbye!\n"
-                 lift $ exitSuccess
+                 lift exitSuccess
 runCmd Export = do lift $ putStrLn "\nExporting playlist...\n"
                    export
 runCmd HelpC = lift $ putStrLn mhelp
