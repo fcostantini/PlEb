@@ -68,7 +68,7 @@ comb = do string "combine "
           return $ Comb (M.rstrip f)
 
 conv :: Parser Cmd
-conv = do string "convert"
+conv = do string "convert "
           f <- stuff
           return $ Conv (M.rstrip f)
 

@@ -5,11 +5,11 @@ import Control.Monad
 import Control.Monad.Trans.Class
 import Control.Monad.Trans.State
 import Data.Char
+import Data.List
+import Data.Maybe
 import System.Directory
 import System.Exit
 import System.FilePath as F
-import Data.List
-import Data.Maybe
 import System.IO.Strict as STR
 
 import Misc
@@ -93,7 +93,7 @@ combinePl comb = do pl <- get
 convert :: String -> PlState ()
 convert fmat = do pl <- get
                   let text = map toLower fmat
-                  let tfmat = getExt text
+                  let tfmat = getExt ('.':text)
                   let pfmat = getExt $ F.takeExtension (getPath pl)
                   if pfmat == tfmat then lift $ putStrLn "\nconvert error: the playlist is already in this format.\n" else
                        case tfmat of
@@ -125,7 +125,7 @@ loadPl :: F.FilePath -> PlState ()
 loadPl file = do mpl <- lift $ getPlaylist file
                  case mpl of 
                    Nothing -> return ()
-                   Just pl -> do lift $ putStrLn ("\nPlaylist " ++ takeFileName (getPath pl) ++ "loaded!\n")
+                   Just pl -> do lift $ putStrLn ("\nPlaylist " ++ takeFileName (getPath pl) ++ " loaded!\n")
                                  put pl
 
 --Prints the contents of a playlist

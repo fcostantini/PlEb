@@ -58,7 +58,7 @@ m3uPrelude ::  String
 m3uPrelude = "#EXTM3U\n"
 
 writeSongM3u :: F.FilePath -> Song -> IO ()
-writeSongM3u file song = let entry = "#EXTINFO\n" ++ song ++ "\n"
+writeSongM3u file song = let entry = song ++ "\n"
                          in appendFile file entry
 
 writeM3u :: Playlist -> IO ()
