@@ -2,6 +2,7 @@ module Operations where
 
 import Control.Exception
 import Control.Monad
+import Control.Monad.IO.Class
 import Control.Monad.Trans.Class
 import Control.Monad.Trans.State
 import Data.Char
@@ -39,12 +40,12 @@ addSong' :: F.FilePath -> RState ()
 addSong' s = do exists <- lift . lift $ doesFileExist s
                 if not exists then
                   badError ("add error: file " ++ s ++ " does not exist.\n")
-                else do lift . lift $ putStr ("\nAdding " ++ s ++ " to playlist... ")
+                else do liftIO $ putStr ("\nAdding " ++ s ++ " to playlist... ")
                         lift (addS s)
                         pl <- lift get
                         let ext = getExt (getPath pl)
-                        lift . lift $ write ext pl
-                        lift . lift $ putStrLn "done!\n"
+                        liftIO $ write ext pl
+                        liftIO $ putStrLn "done!\n"
                         good
 
 
@@ -61,8 +62,8 @@ addDir d = do exists <- lift $ doesDirectoryExist d
 
 --Checks if a song in the playlist exists in the file system, keeping a report
 checkSong :: Song -> RState ()
-checkSong s = do b <- lift . lift $ doesFileExist s
-                 if b then do lift . lift $ putStrLn ("Ok " ++ F.takeBaseName s)
+checkSong s = do b <- liftIO $ doesFileExist s
+                 if b then do liftIO $ putStrLn ("Ok " ++ F.takeBaseName s)
                               good
                  else badError (s ++ " does NOT exist in the file system.\n")
 
@@ -105,11 +106,11 @@ convert fmat = do pl <- get
 
 --Exports a song, keeping a success report
 exportSong :: String -> Song -> RState ()
-exportSong pname fp = do exists <- lift . lift $ doesFileExist fp
+exportSong pname fp = do exists <- liftIO $ doesFileExist fp
                          if not exists then
                            badError ("\nexport error: file " ++ fp ++ " does not exist.")
-                         else do lift . lift $ copyFileWithMetadata fp (pname F.</> song)
-                                 lift . lift $ putStrLn ("Copied "++song)
+                         else do liftIO $ copyFileWithMetadata fp (pname F.</> song)
+                                 liftIO $ putStrLn ("Copied "++song)
                                  good
                                  where song = takeFileName fp
 
