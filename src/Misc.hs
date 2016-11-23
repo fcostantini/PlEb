@@ -24,7 +24,7 @@ mhelp = "\nadd song_path: adds song to the playlist (if it exists).\n"++
         "print: prints the content of the playlist.\n"++
         "rmv song_path: removes song from the playlist (if it exists).\n"
 
-vers = "PlEb 1.3.1"
+vers = "PlEb 1.4.0"
 
 handleRead :: IOError -> Maybe String
 handleRead e | isDoesNotExistError e = Just "Error reading: file doesn't exist."

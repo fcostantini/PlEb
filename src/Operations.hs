@@ -110,7 +110,7 @@ exportSong pname fp = do exists <- liftIO $ doesFileExist fp
                          if not exists then
                            badError ("\nexport error: file " ++ fp ++ " does not exist.")
                          else do liftIO $ copyFileWithMetadata fp (pname F.</> song)
-                                 liftIO $ putStrLn ("Copied "++song)
+                                 liftIO $ putStrLn ("Copied " ++ song)
                                  good
                                  where song = takeFileName fp
 
@@ -122,6 +122,7 @@ export = do pl <- get
             r <- execStateT (mapM_ (exportSong pname) (getSongs pl)) iReport
             lift $ putStrLn $ ppReport r
 
+--Loads a playlist (when in interactive mode)
 loadPl :: F.FilePath -> PlState ()
 loadPl file = do mpl <- lift $ getPlaylist file
                  case mpl of 

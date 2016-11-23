@@ -34,6 +34,7 @@ badError :: String -> RState ()
 badError e = addError e >> bad
 
 ppReport :: Report -> String
+ppReport (Rep _ 0 0) = ""
 ppReport (Rep e 1 0) = "\nCommand successful! The operation was completed without errors.\n"
 ppReport (Rep e g 0) = "\nCommand successful! " ++ show g ++ " operations were completed without errors.\n"
 ppReport (Rep e 0 1) = "\nCommand unsuccessful. One error was encountered:\n\n" ++ e
