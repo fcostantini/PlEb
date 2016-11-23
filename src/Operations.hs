@@ -70,8 +70,9 @@ checkSong s = do b <- liftIO $ doesFileExist s
 --Checks if the contents of the playlist exist
 check :: PlState ()
 check = do pl <- get
-           r <- execStateT (mapM_ checkSong (getSongs pl)) iReport
-           lift $ putStrLn $ ppReport r
+           if (emptyP pl) then lift $ putStrLn "Nothing to check (playlist is empty).\n"
+           else do r <- execStateT (mapM_ checkSong (getSongs pl)) iReport
+                   lift $ putStrLn $ ppReport r
 
 --Combines two playlists in a new file
 combinePl :: String -> PlState ()
@@ -79,7 +80,7 @@ combinePl comb = do pl <- get
                     mpl' <- lift $ getPlaylist comb
                     case mpl' of
                       Nothing -> lift $ putStrLn "combine error: failed to read the second playlist.\n"
-                      Just pl'-> if null $ getSongs pl' then lift $ putStrLn "\ncombine error: trying to combine with an empty playlist.\n"
+                      Just pl'-> if (emptyP pl') then lift $ putStrLn "\ncombine error: trying to combine with an empty playlist.\n"
                                  else let songs = getSongs pl
                                           songs' = getSongs pl'
                                           path = getPath pl
@@ -117,10 +118,11 @@ exportSong pname fp = do exists <- liftIO $ doesFileExist fp
 --Exports a playlist
 export :: PlState ()
 export = do pl <- get
-            let pname = F.takeBaseName (getPath pl)
-            lift $ createDirectoryIfMissing False pname
-            r <- execStateT (mapM_ (exportSong pname) (getSongs pl)) iReport
-            lift $ putStrLn $ ppReport r
+            if (emptyP pl) then lift $ putStrLn "Nothing to export (playlist is empty).\n"
+            else let pname = F.takeBaseName (getPath pl) in
+                 do lift $ createDirectoryIfMissing False pname
+                    r <- execStateT (mapM_ (exportSong pname) (getSongs pl)) iReport
+                    lift $ putStrLn $ ppReport r
 
 --Loads a playlist (when in interactive mode)
 loadPl :: F.FilePath -> PlState ()
@@ -133,10 +135,11 @@ loadPl file = do mpl <- lift $ getPlaylist file
 --Prints the contents of a playlist
 plPrint :: PlState ()
 plPrint = do pl <- get
-             let pname = F.takeBaseName (getPath pl)
-             lift $ putStrLn ("Playlist: " ++ pname ++ "\n")
-             lift $ mapM_ putStrLn (getSongs pl)
-             lift $ putStrLn ""
+             if (emptyP pl) then lift $ putStrLn "Nothing to print (playlist is empty).\n"
+             else let pname = F.takeBaseName (getPath pl) in
+                  do lift $ putStrLn ("Playlist: " ++ pname ++ "\n")
+                     lift $ mapM_ putStrLn (getSongs pl)
+                     lift $ putStrLn ""
 
 --Removes all ocurrencies of a song from a playlist
 rmvSong :: F.FilePath -> PlState ()

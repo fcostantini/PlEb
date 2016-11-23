@@ -12,6 +12,9 @@ data Ext = M3u | Pls | Wpl | Xspf | Other deriving Eq
 data Playlist = Pl {getPath :: F.FilePath,
                     getSongs :: [Song]} deriving (Eq, Show)
 
+emptyP :: Playlist -> Bool
+emptyP pl = null $ getSongs pl
+
 --Current playlist will be the state
 type PlState = StateT Playlist IO
 
