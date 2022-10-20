@@ -1,5 +1,5 @@
 # PlEb  
-A simple tool to manage playlists. Supported formats are m3u, m3u8, pls, wpl and xspf.  
+A simple tool to manage playlists. Allows adding/removing songs (including full directories), format conversion, combining and exporting. Supported formats are m3u, m3u8, pls, wpl and xspf.  
 
 ## Requirements  
 
@@ -24,7 +24,7 @@ As an alternative, it is possible to feed a file with operations to PlEb, which 
 
     $ PlEb playlist-file -c command-file  
 
-This file must have a single line with the desired commands, i.e., when providing more than one, they must be chained.  
+This file must have a single line with the desired commands, i.e., when providing more than one, they must be chained (see below).  
 
 ### Operations  
 
@@ -47,5 +47,5 @@ If a chained command has an error, execution will continue regardless.
 
 **Notes:**  
 
- - add, add_dir and rmv actually modify the file, you may want to do a backup before.  
+ - `add`, `add_dir` and `rmv` actually modify the file, you may want to do a backup before.  
  - when adding songs, if the given path is relative it will be added with that path. If you want to add with absolute paths you must provide them explicitely.  
